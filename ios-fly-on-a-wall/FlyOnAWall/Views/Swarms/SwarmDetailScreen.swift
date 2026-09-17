@@ -43,6 +43,7 @@ struct SwarmDetailScreen: View {
                             partner: CGPoint(x: field.midX, y: field.midY),
                             seed: UInt64(index &* 613 &+ 7),
                             isEmphasized: emphasizedID == fly.id,
+                            showsConnectionMark: !store.connections(touching: fly.id).isEmpty,
                             accessibilityTitle: "\(fly.handle). \(fly.text)"
                         ) {
                             tap(fly)
@@ -55,6 +56,26 @@ struct SwarmDetailScreen: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .bottom) {
+            if let swarm {
+                PlateButton(title: "ENTER THE SWARM", systemImage: "link") {
+                    Haptics.tap()
+                    openBoard(for: swarm)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, WallMetrics.tabBarClearance - 18)
+            }
+        }
+    }
+
+    /// The fly with the most links anchors the swarm's Connection Board.
+    private func openBoard(for swarm: Swarm) {
+        let flies = store.stories(in: swarm)
+        let anchor = flies.max(by: {
+            store.connections(touching: $0.id).count < store.connections(touching: $1.id).count
+        })
+        guard let anchorID = anchor?.id else { return }
+        path.append(WallRoute.connectionBoard(anchorID))
     }
 
     private func header(_ swarm: Swarm, count: Int) -> some View {
@@ -77,12 +98,25 @@ struct SwarmDetailScreen: View {
                     .foregroundStyle(WallTheme.ink.opacity(0.85))
                     .fixedSize(horizontal: false, vertical: true)
                     .shadow(color: WallTheme.bone.opacity(0.55), radius: 0, x: 1, y: 1)
+                connectionLine(for: swarm)
             }
 
             Spacer()
         }
         .padding(.horizontal, 18)
         .padding(.top, 4)
+    }
+
+    /// Connection strength summary, e.g. "3 STRONG · 1 POSSIBLE".
+    @ViewBuilder
+    private func connectionLine(for swarm: Swarm) -> some View {
+        let stats = store.connectionStats(for: swarm)
+        if stats.strong + stats.possible + stats.weak > 0 {
+            Text("\(stats.strong) STRONG · \(stats.possible) POSSIBLE · \(stats.weak) WEAK")
+                .font(WallFont.stamp(11))
+                .foregroundStyle(FlyCategory.connected.tint)
+                .padding(.top, 2)
+        }
     }
 
     /// Flies orbit the event at the centre of the field.

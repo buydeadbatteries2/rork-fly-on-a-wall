@@ -8,10 +8,11 @@
 
 import Foundation
 
-/// Static sample confessions and swarms.
+/// Static sample confessions, swarms and connections.
 enum MockWallData {
     static let stories: [StoryFly] = buildStories()
     static let swarms: [Swarm] = buildSwarms()
+    static let connections: [FlyConnection] = buildConnections()
 
     static func stories(in category: FlyCategory) -> [StoryFly] {
         stories.filter { $0.category == category }
@@ -143,6 +144,133 @@ enum MockWallData {
         add("Someone dug up the old parking spot spreadsheet. It is now community property. Chaos followed.", .oldBuzz, hoursAgo: 400, reactions: 1360, witnesses: 3)
 
         return flies
+    }
+
+    /// Predefined connections between existing mock flies, so the Connection
+    /// Board can be tested without creating everything by hand. Covers all
+    /// three strengths, with several tied to existing swarms.
+    private static func buildConnections() -> [FlyConnection] {
+        func connect(
+            _ prefixA: String,
+            _ prefixB: String,
+            _ strength: ConnectionStrength,
+            clues: [ConnectionClue],
+            conflicts: [String] = [],
+            swarm: String? = nil,
+            hoursAgo: Double
+        ) -> FlyConnection? {
+            guard let a = id(forTextPrefix: prefixA), let b = id(forTextPrefix: prefixB) else { return nil }
+            return FlyConnection(
+                sourceID: a,
+                targetID: b,
+                strength: strength,
+                overlappingClues: clues,
+                conflictingClues: conflicts,
+                isUserProposed: false,
+                createdAt: date(hoursAgo: hoursAgo),
+                swarmID: swarm
+            )
+        }
+
+        var links: [FlyConnection] = []
+        func add(_ link: FlyConnection?) {
+            if let link { links.append(link) }
+        }
+
+        // STRONG BUZZ
+        add(connect(
+            "A pigeon walked into our office",
+            "The pigeon, the salmon, and the stapler",
+            .strongBuzz,
+            clues: [.sameEventType, .detailsOverlap, .sameTimeframe],
+            swarm: "swarm-office",
+            hoursAgo: 20
+        ))
+        add(connect(
+            "The wedding DJ played the wrong first-dance song",
+            "I was the caterer at that wedding",
+            .strongBuzz,
+            clues: [.sameEventType, .similarSetting, .detailsOverlap],
+            swarm: "swarm-wedding",
+            hoursAgo: 18
+        ))
+        add(connect(
+            "Two people at the wedding claim they caught the bouquet",
+            "I saw the whole thing at the wedding",
+            .strongBuzz,
+            clues: [.detailsOverlap, .sameTimeframe, .iWasThere],
+            swarm: "swarm-wedding",
+            hoursAgo: 11
+        ))
+        add(connect(
+            "She said the date went great",
+            "I was their waiter on that date",
+            .strongBuzz,
+            clues: [.detailsOverlap, .sameTimeframe, .iWasThere],
+            conflicts: ["One detail conflicts"],
+            swarm: "swarm-date",
+            hoursAgo: 9
+        ))
+
+        // POSSIBLE CONNECTION
+        add(connect(
+            "Someone microwaved salmon at the company all-hands",
+            "Somebody ate my labelled lunch",
+            .possible,
+            clues: [.similarSetting, .sameTimeframe],
+            conflicts: ["One detail conflicts"],
+            swarm: "swarm-office",
+            hoursAgo: 14
+        ))
+        add(connect(
+            "The office pigeon situation escalated",
+            "Someone put googly eyes on every security camera",
+            .possible,
+            clues: [.sameEventType, .similarSetting],
+            swarm: "swarm-office",
+            hoursAgo: 26
+        ))
+        add(connect(
+            "Four separate flies have now described the same burnt-sugar smell",
+            "I delivered to that apartment the same night",
+            .possible,
+            clues: [.similarSetting, .sameTimeframe, .detailsOverlap],
+            conflicts: ["One detail conflicts"],
+            hoursAgo: 30
+        ))
+
+        // WEAK BUZZ
+        add(connect(
+            "I sneezed so hard on a first date",
+            "The disaster date from last year has a sequel",
+            .weakBuzz,
+            clues: [.sameEventType],
+            swarm: "swarm-date",
+            hoursAgo: 36
+        ))
+        add(connect(
+            "Someone returned the office stapler with a note",
+            "Same building, different floor",
+            .weakBuzz,
+            clues: [.similarSetting],
+            swarm: "swarm-office",
+            hoursAgo: 40
+        ))
+        add(connect(
+            "My dentist hummed the entire time",
+            "An old story about a karaoke betrayal",
+            .weakBuzz,
+            clues: [.sameEventType],
+            hoursAgo: 44
+        ))
+
+        return links
+    }
+
+    /// Looks up a mock fly ID by the start of its text. Keeps the connection
+    /// table readable without hard-coding generated counter IDs.
+    private static func id(forTextPrefix prefix: String) -> String? {
+        stories.first { $0.text.hasPrefix(prefix) }?.id
     }
 
     private static func buildSwarms() -> [Swarm] {

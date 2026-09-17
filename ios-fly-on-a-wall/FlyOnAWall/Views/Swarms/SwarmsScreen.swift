@@ -47,6 +47,7 @@ struct SwarmClusterCard: View {
     let swarm: Swarm
     let action: () -> Void
 
+    @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -106,6 +107,8 @@ struct SwarmClusterCard: View {
                     .padding(.vertical, 5)
                     .background(Capsule().fill(WallTheme.rust))
                     .padding(.top, 2)
+
+                    connectionSummary(swarm)
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -118,6 +121,18 @@ struct SwarmClusterCard: View {
         .buttonStyle(PressableButtonStyle(scale: 0.98))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(swarm.title). \(swarm.flyCount) connected flies. \(swarm.teaser)")
+    }
+
+    /// "3 STRONG · 1 POSSIBLE" — hidden entirely when nothing overlaps.
+    @ViewBuilder
+    private func connectionSummary(_ swarm: Swarm) -> some View {
+        let stats = store.connectionStats(for: swarm)
+        if stats.strong + stats.possible + stats.weak > 0 {
+            Text("\(stats.strong) STRONG · \(stats.possible) POSSIBLE · \(stats.weak) WEAK")
+                .font(WallFont.stamp(10))
+                .foregroundStyle(FlyCategory.connected.tint)
+                .padding(.top, 4)
+        }
     }
 
     private func clusterPoint(index: Int, count: Int, field: CGRect) -> CGPoint {

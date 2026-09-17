@@ -85,6 +85,8 @@ private struct WallDestinations: ViewModifier {
                 StoryDetailScreen(storyID: id, path: $path)
             case .swarm(let id):
                 SwarmDetailScreen(swarmID: id, path: $path)
+            case .connectionBoard(let id):
+                ConnectionBoardScreen(storyID: id, path: $path)
             }
         }
     }

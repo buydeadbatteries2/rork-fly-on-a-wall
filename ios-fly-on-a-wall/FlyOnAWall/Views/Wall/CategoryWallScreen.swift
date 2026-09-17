@@ -43,6 +43,7 @@ struct CategoryWallScreen: View {
                         partner: partner,
                         seed: UInt64(index &* 977 &+ 13),
                         isEmphasized: emphasizedID == story.id,
+                        showsConnectionMark: !store.connections(touching: story.id).isEmpty,
                         accessibilityTitle: "\(story.handle). \(story.text)"
                     ) {
                         tap(story)

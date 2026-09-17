@@ -65,6 +65,26 @@ struct StoryFly: Identifiable, Hashable, Codable {
         formatter.unitsStyle = .full
         return formatter.localizedString(for: postedAt, relativeTo: .now)
     }
+
+    /// Copy of this fly assigned to (or removed from) a swarm. Used when a
+    /// user-formed connection graph grows into a Swarm.
+    func joining(swarmID: String?) -> StoryFly {
+        StoryFly(
+            id: id,
+            handle: handle,
+            text: text,
+            category: category,
+            postedAt: postedAt,
+            reactionCount: reactionCount,
+            witnessCount: witnessCount,
+            connectedFlyCount: connectedFlyCount,
+            isFollowed: isFollowed,
+            area: area,
+            swarmID: swarmID,
+            connectionStrength: connectionStrength,
+            isMine: isMine
+        )
+    }
 }
 
 /// A group of flies that appear to circle the same event.

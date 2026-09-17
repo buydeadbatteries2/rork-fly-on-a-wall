@@ -14,7 +14,6 @@ struct StoryDetailScreen: View {
     @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showWitnessSheet: Bool = false
-    @State private var showConnections: Bool = false
     @State private var showReport: Bool = false
     @State private var reactionKick: Bool = false
     @State private var followKick: Bool = false
@@ -39,11 +38,6 @@ struct StoryDetailScreen: View {
         .sheet(isPresented: $showWitnessSheet) {
             if let story {
                 IWasThereSheet(story: story)
-            }
-        }
-        .sheet(isPresented: $showConnections) {
-            if let story {
-                ConnectedFliesSheet(story: story, path: $path)
             }
         }
         .alert("Reported", isPresented: $showReport) {
@@ -73,6 +67,7 @@ struct StoryDetailScreen: View {
                     identityCard(story)
                     confessionCard(story)
                     statsRow(story)
+                    connectionIndicators(story)
                     actionGrid(story)
                     if !store.claims(for: story.id).isEmpty {
                         witnessNotes(story)
@@ -170,6 +165,86 @@ struct StoryDetailScreen: View {
         }
     }
 
+    // MARK: - Connections
+
+    /// 🟣 connected-fly count + 🪰 swarm membership, when they exist.
+    @ViewBuilder
+    private func connectionIndicators(_ story: StoryFly) -> some View {
+        let linkCount = store.connections(touching: story.id).count
+        if linkCount > 0 {
+            Button {
+                Haptics.tap()
+                path.append(WallRoute.connectionBoard(story.id))
+            } label: {
+                HStack(spacing: 11) {
+                    Text("🟣")
+                        .font(.system(size: 17))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(linkCount) CONNECTED FLIES")
+                            .font(WallFont.stencil(17))
+                            .foregroundStyle(WallTheme.ink)
+                        Text("THESE FLIES MAY CONNECT")
+                            .font(WallFont.stamp(9))
+                            .foregroundStyle(WallTheme.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "link")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundStyle(FlyCategory.connected.tint)
+                }
+                .padding(13)
+                .frame(minHeight: 52)
+                .background {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(WallTheme.paper.opacity(0.94))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(FlyCategory.connected.tint.opacity(0.75), lineWidth: 1.8)
+                        )
+                        .wallShadow(radius: 7, y: 4)
+                }
+            }
+            .buttonStyle(PressableButtonStyle(scale: 0.98))
+            .accessibilityLabel("\(linkCount) connected flies. These flies may connect. Opens the connection board.")
+        }
+
+        if let swarm = store.swarm(for: story) {
+            Button {
+                Haptics.tap()
+                path.append(WallRoute.swarm(swarm.id))
+            } label: {
+                HStack(spacing: 11) {
+                    Text("🪰")
+                        .font(.system(size: 16))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("PART OF A SWARM")
+                            .font(WallFont.stamp(9))
+                            .foregroundStyle(WallTheme.rust)
+                        Text(swarm.title)
+                            .font(WallFont.stencil(16))
+                            .foregroundStyle(WallTheme.ink)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundStyle(WallTheme.inkSoft)
+                }
+                .padding(13)
+                .frame(minHeight: 52)
+                .background {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(WallTheme.ink.opacity(0.62))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(WallTheme.rust.opacity(0.7), lineWidth: 1.4)
+                        )
+                }
+            }
+            .buttonStyle(PressableButtonStyle(scale: 0.98))
+            .accessibilityLabel("Part of a swarm: \(swarm.title)")
+        }
+    }
+
     private func actionGrid(_ story: StoryFly) -> some View {
         HStack(spacing: 10) {
             actionTile(
@@ -194,9 +269,9 @@ struct StoryDetailScreen: View {
                 kickFollow()
             }
 
-            actionTile(systemImage: "link", label: "CONNECTIONS", isActive: false, kick: false) {
+            actionTile(systemImage: "link", label: "CONNECTIONS", isActive: !store.connections(touching: story.id).isEmpty, kick: false) {
                 Haptics.tap()
-                showConnections = true
+                path.append(WallRoute.connectionBoard(story.id))
             }
 
             actionTile(systemImage: "flag.fill", label: "REPORT", isActive: false, kick: false) {

@@ -10,4 +10,6 @@ enum WallRoute: Hashable {
     case category(FlyCategory)
     case story(String)
     case swarm(String)
+    /// Phase 2 investigation board for one fly's connections.
+    case connectionBoard(String)
 }

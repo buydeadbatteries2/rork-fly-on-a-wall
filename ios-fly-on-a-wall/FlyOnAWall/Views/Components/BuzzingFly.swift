@@ -28,6 +28,8 @@ struct BuzzingFly: View {
     var entranceDelay: Double = 0
     /// Optional brain: enables reporting and robot commands.
     var director: RobotDirector?
+    /// Phase 2: subtle purple badge + ring when this story has connections.
+    var showsConnectionMark: Bool = false
     var accessibilityTitle: String
     let onTap: () -> Void
 
@@ -51,6 +53,7 @@ struct BuzzingFly: View {
         entranceFrom: CGPoint? = nil,
         entranceDelay: Double = 0,
         director: RobotDirector? = nil,
+        showsConnectionMark: Bool = false,
         accessibilityTitle: String,
         onTap: @escaping () -> Void
     ) {
@@ -64,6 +67,7 @@ struct BuzzingFly: View {
         self.entranceFrom = entranceFrom
         self.entranceDelay = entranceDelay
         self.director = director
+        self.showsConnectionMark = showsConnectionMark
         self.accessibilityTitle = accessibilityTitle
         self.onTap = onTap
         _rng = State(initialValue: WallRandom(seed: seed))
@@ -81,6 +85,7 @@ struct BuzzingFly: View {
                     .frame(width: hitSize, height: hitSize)
                     .contentShape(Circle())
                 FlyView(category: category, size: size, isEmphasized: isEmphasized)
+                    .overlay(connectionMark)
                     .rotationEffect(.degrees(tilt))
                     .scaleEffect(isEmphasized ? 1.9 : 1.0)
                     .animation(.spring(response: 0.3, dampingFraction: 0.5), value: isEmphasized)
@@ -92,6 +97,33 @@ struct BuzzingFly: View {
         .accessibilityLabel(accessibilityTitle)
         .accessibilityAddTraits(.isButton)
         .task { await runLife() }
+    }
+
+    /// Subtle linked-story cue: faint purple ring plus a tiny link badge.
+    /// Deliberately quiet so the category colour system stays dominant.
+    @ViewBuilder
+    private var connectionMark: some View {
+        if showsConnectionMark {
+            let badge = max(12, size * 0.46)
+            ZStack {
+                Circle()
+                    .stroke(FlyCategory.connected.tint.opacity(0.4), lineWidth: 1.3)
+                    .frame(width: size * 1.45, height: size * 1.45)
+                Circle()
+                    .fill(WallTheme.paper.opacity(0.95))
+                    .frame(width: badge, height: badge)
+                    .overlay(
+                        Circle().stroke(FlyCategory.connected.tint, lineWidth: 1.2)
+                    )
+                    .overlay(
+                        Image(systemName: "link")
+                            .font(.system(size: badge * 0.5, weight: .black))
+                            .foregroundStyle(FlyCategory.connected.tint)
+                    )
+            }
+            .offset(x: size * 0.52, y: -size * 0.52)
+            .allowsHitTesting(false)
+        }
     }
 
     // MARK: - Life
