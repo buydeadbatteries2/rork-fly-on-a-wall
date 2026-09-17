@@ -1,0 +1,10 @@
+{
+  "apps": [
+    {
+      "name": "Fly on a Wall",
+      "path": "ios-fly-on-a-wall",
+      "framework": "swift"
+    }
+  ],
+  "$schema": "https://rork.com/schema/rork.json"
+}

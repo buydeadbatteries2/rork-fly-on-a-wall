@@ -1,0 +1,235 @@
+//
+//  WallSurfaces.swift
+//  FlyOnAWall
+//
+//  Shared surface language: wall backdrop, taped paper scraps, rusted plates,
+//  stencil titles.
+//
+
+import SwiftUI
+
+/// Full-bleed sunbleached wall backdrop. Uses the generated texture when
+/// available and falls back to a painted gradient so the app never looks empty.
+struct WallBackdrop: View {
+    var tint: Color? = nil
+    var tintStrength: Double = 0.18
+
+    var body: some View {
+        ZStack {
+            if let image = UIImage(named: WallAsset.wall) {
+                Color(WallTheme.warmGray)
+                    .overlay {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .allowsHitTesting(false)
+                    }
+                    .clipped()
+            } else {
+                ProceduralWall()
+            }
+
+            if let tint {
+                tint.opacity(tintStrength).blendMode(.multiply)
+            }
+
+            // Vignette keeps the chrome readable over a bright texture.
+            LinearGradient(
+                colors: [.black.opacity(0.22), .clear, .clear, .black.opacity(0.30)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .allowsHitTesting(false)
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// Painted concrete fallback drawn entirely in SwiftUI.
+private struct ProceduralWall: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    WallTheme.bone,
+                    WallTheme.bone.opacity(0.92),
+                    WallTheme.warmGray
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Canvas { context, size in
+                var rng = WallRandom(seed: 99)
+                for _ in 0..<26 {
+                    let x = CGFloat(rng.next(in: 0...Double(size.width)))
+                    let y = CGFloat(rng.next(in: 0...Double(size.height)))
+                    let w = CGFloat(rng.next(in: 30...170))
+                    let h = CGFloat(rng.next(in: 20...110))
+                    let opacity = rng.next(in: 0.03...0.11)
+                    context.fill(
+                        Ellipse().path(in: CGRect(x: x, y: y, width: w, height: h)),
+                        with: .color(WallTheme.inkSoft.opacity(opacity))
+                    )
+                }
+                for _ in 0..<12 {
+                    var path = Path()
+                    let x = CGFloat(rng.next(in: 0...Double(size.width)))
+                    let y = CGFloat(rng.next(in: 0...Double(size.height)))
+                    path.move(to: CGPoint(x: x, y: y))
+                    var current = CGPoint(x: x, y: y)
+                    for _ in 0..<5 {
+                        current = CGPoint(
+                            x: current.x + CGFloat(rng.next(in: -26...26)),
+                            y: current.y + CGFloat(rng.next(in: 16...58))
+                        )
+                        path.addLine(to: current)
+                    }
+                    context.stroke(path, with: .color(WallTheme.ink.opacity(0.14)), lineWidth: 1.4)
+                }
+                for _ in 0..<7 {
+                    let x = CGFloat(rng.next(in: 0...Double(size.width)))
+                    let w = CGFloat(rng.next(in: 6...18))
+                    let h = CGFloat(rng.next(in: 60...260))
+                    context.fill(
+                        Capsule().path(in: CGRect(x: x, y: 0, width: w, height: h)),
+                        with: .color(WallTheme.rust.opacity(rng.next(in: 0.05...0.14)))
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// A piece of aged paper taped to the wall. Content is laid out on top.
+struct TapedPaper<Content: View>: View {
+    var rotation: Double = -1.2
+    var padding: CGFloat = 18
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        content()
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                ZStack {
+                    if let image = UIImage(named: WallAsset.paper) {
+                        Image(uiImage: image)
+                            .resizable(capInsets: EdgeInsets(top: 90, leading: 90, bottom: 90, trailing: 90), resizingMode: .stretch)
+                    } else {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(WallTheme.paper)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(WallTheme.inkSoft.opacity(0.25), lineWidth: 1)
+                            )
+                    }
+                }
+                .allowsHitTesting(false)
+            }
+            .overlay(alignment: .topLeading) { tape.rotationEffect(.degrees(-16)).offset(x: -6, y: -10) }
+            .overlay(alignment: .topTrailing) { tape.rotationEffect(.degrees(12)).offset(x: 8, y: -12) }
+            .rotationEffect(.degrees(rotation))
+            .wallShadow()
+    }
+
+    private var tape: some View {
+        Rectangle()
+            .fill(Color(red: 0.87, green: 0.82, blue: 0.68).opacity(0.72))
+            .frame(width: 56, height: 20)
+            .overlay(Rectangle().stroke(.white.opacity(0.25), lineWidth: 0.5))
+    }
+}
+
+/// Worn spray-stencil title, the app's headline voice.
+struct StencilTitle: View {
+    let text: String
+    var size: CGFloat = 40
+    var color: Color = WallTheme.ink
+
+    var body: some View {
+        Text(text)
+            .font(WallFont.stencil(size))
+            .kerning(1.5)
+            .foregroundStyle(color)
+            .shadow(color: WallTheme.bone.opacity(0.5), radius: 0, x: 1.5, y: 1.5)
+            .shadow(color: .black.opacity(0.28), radius: 5, x: 0, y: 3)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// Rusted metal nameplate used for primary actions.
+struct RustPlateBackground: View {
+    var color: Color = WallTheme.rust
+
+    var body: some View {
+        ZStack {
+            if let image = UIImage(named: WallAsset.plate) {
+                Image(uiImage: image)
+                    .resizable(capInsets: EdgeInsets(top: 120, leading: 220, bottom: 120, trailing: 220), resizingMode: .stretch)
+            } else {
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [color, color.opacity(0.78), color.opacity(0.94)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(Capsule().stroke(WallTheme.ink.opacity(0.45), lineWidth: 1.5))
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Big bolted action button, the app's primary call to action.
+struct PlateButton: View {
+    let title: String
+    var systemImage: String?
+    var tint: Color = WallTheme.rust
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Text(title)
+                    .font(WallFont.stencil(23))
+                    .kerning(1.2)
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 19, weight: .heavy))
+                }
+            }
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.45), radius: 2, x: 0, y: 1)
+            .frame(maxWidth: .infinity)
+            .frame(height: 60)
+            .background { RustPlateBackground(color: tint) }
+            .overlay(alignment: .leading) { bolt.padding(.leading, 14) }
+            .overlay(alignment: .trailing) { bolt.padding(.trailing, 14) }
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel(title)
+    }
+
+    private var bolt: some View {
+        Circle()
+            .fill(
+                RadialGradient(colors: [WallTheme.warmGray, WallTheme.ink], center: .topLeading, startRadius: 0, endRadius: 8)
+            )
+            .frame(width: 10, height: 10)
+            .allowsHitTesting(false)
+    }
+}
+
+/// Squishy press feedback used by every custom control.
+struct PressableButtonStyle: ButtonStyle {
+    var scale: CGFloat = 0.95
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.55), value: configuration.isPressed)
+    }
+}
