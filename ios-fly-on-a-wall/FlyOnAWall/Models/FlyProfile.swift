@@ -28,6 +28,8 @@ struct FlyProfile: Identifiable, Hashable, Codable {
     /// What is currently happening around this Fly's Buzz. Not an identity —
     /// colours change as the Fly's Buzz changes.
     var currentStatus: FlyStatus
+    /// Optional public social links shown on the Hive. Nil/empty = no icons.
+    var socialLinks: FlySocialLinks?
     /// The Buzz previewed when this Fly is tapped on The Wall.
     let featuredBuzzID: String?
     let joinedAt: Date
@@ -45,6 +47,7 @@ struct FlyProfile: Identifiable, Hashable, Codable {
         buzzCount: Int = 0,
         interests: [BuzzCategory] = [],
         currentStatus: FlyStatus = .new,
+        socialLinks: FlySocialLinks? = nil,
         featuredBuzzID: String? = nil,
         joinedAt: Date = .now,
         isMe: Bool = false
@@ -59,6 +62,7 @@ struct FlyProfile: Identifiable, Hashable, Codable {
         self.buzzCount = buzzCount
         self.interests = interests
         self.currentStatus = currentStatus
+        self.socialLinks = socialLinks
         self.featuredBuzzID = featuredBuzzID
         self.joinedAt = joinedAt
         self.isMe = isMe

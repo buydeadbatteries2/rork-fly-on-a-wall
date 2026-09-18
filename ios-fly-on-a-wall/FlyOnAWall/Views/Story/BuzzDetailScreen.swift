@@ -79,6 +79,7 @@ struct BuzzDetailScreen: View {
                     statsRow(buzz)
                     connectionIndicators(buzz)
                     actionGrid(buzz, author)
+                    shareButton(buzz, author)
                     buzzBacksSection(buzz)
                     if !store.claims(for: buzz.id).isEmpty {
                         witnessNotes(buzz)
@@ -371,6 +372,37 @@ struct BuzzDetailScreen: View {
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel(label.replacingOccurrences(of: "\n", with: " "))
+    }
+
+    /// Native iOS share sheet — mock deep-link-ready payload until real
+    /// Buzz URLs exist.
+    private func shareButton(_ buzz: Buzz, _ author: FlyProfile) -> some View {
+        ShareLink(item: shareText(for: buzz, author: author)) {
+            HStack(spacing: 9) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 15, weight: .heavy))
+                    .foregroundStyle(WallTheme.rust)
+                Text("SHARE BUZZ")
+                    .font(WallFont.stamp(14))
+                    .kerning(1.0)
+                    .foregroundStyle(WallTheme.ink)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 50)
+            .background {
+                Capsule()
+                    .fill(WallTheme.paper.opacity(0.95))
+                    .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(0.5), lineWidth: 1.3))
+            }
+            .wallShadow(radius: 5, y: 3)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel("Share this buzz")
+    }
+
+    private func shareText(for buzz: Buzz, author: FlyProfile) -> String {
+        // Mock payload — production will swap in the real Buzz URL.
+        "Check out this Buzz from \(author.username) on Fly on a Wall 🪰\n\"\(buzz.text)\"\n\nflyonawall.app/buzz/\(buzz.id)"
     }
 
     // MARK: - Conversation

@@ -27,6 +27,9 @@ final class WallStore {
     /// Buzz-to-buzz links. Buzzes only — never identification of people.
     private(set) var connections: [FlyConnection] = MockWallData.connections
 
+    /// Lightweight local persistence for the user's public social links.
+    private static let mySocialLinksKey = "flyOnAWall.mySocialLinks"
+
     /// The local profile of the person holding the phone.
     let me: FlyProfile
 
@@ -41,6 +44,11 @@ final class WallStore {
         self.swarms = swarms
         self.buzzBacks = buzzBacks
         self.me = profiles.first { $0.isMe } ?? FlyProfile(id: "fly-me", username: "@JustLanded", displayName: "You", tagline: "New here.")
+        if let data = UserDefaults.standard.data(forKey: Self.mySocialLinksKey),
+           let links = try? JSONDecoder().decode(FlySocialLinks.self, from: data),
+           !links.isEmpty {
+            updateMe { $0.socialLinks = links }
+        }
     }
 
     // MARK: - Reads: content
@@ -225,6 +233,16 @@ final class WallStore {
         )
         if let index = buzzes.firstIndex(where: { $0.id == buzzID }) {
             buzzes[index].iWasThereCount += 1
+        }
+    }
+
+    // MARK: - Mutations: my profile
+
+    /// Persists the user's public social links locally — no backend involved.
+    func updateMySocialLinks(_ links: FlySocialLinks) {
+        updateMe { $0.socialLinks = links }
+        if let data = try? JSONEncoder().encode(links) {
+            UserDefaults.standard.set(data, forKey: Self.mySocialLinksKey)
         }
     }
 

@@ -49,13 +49,13 @@ enum WallFont {
     }
 }
 
-/// Bundled artwork names.
+/// Bundled artwork names. The rusty nameplate was retired — its asset file
+/// remains on disk but has zero runtime references.
 enum WallAsset {
     static let wall = "urban_junkyard_wall"
     static let robotIdle = "goofy_robot_mascot"
     static let robotSwat = "robot_flyswatter_swat"
     static let paper = "torn_paper_scrap"
-    static let plate = "rusted_metal_nameplate"
 }
 
 /// Shared layout metrics.

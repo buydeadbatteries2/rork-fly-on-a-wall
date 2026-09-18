@@ -2,8 +2,8 @@
 //  WallSurfaces.swift
 //  FlyOnAWall
 //
-//  Shared surface language: wall backdrop, taped paper scraps, rusted plates,
-//  stencil titles.
+//  Shared surface language: wall backdrop, taped paper scraps, action
+//  surfaces, stencil titles.
 //
 
 import SwiftUI
@@ -22,6 +22,22 @@ struct WallBackdrop: View {
     static let standardDim: Double = 0.18
     /// Dimming behind an active modal/sheet (stronger, still not dark mode).
     static let modalDim: Double = 0.40
+
+    /// Manual Night Mode, persisted locally. The same wall, after dark.
+    @AppStorage("flyNightMode") private var nightMode = false
+
+    private enum Night {
+        /// Cool moonlit wash composited over the UNMODIFIED artwork.
+        static let wash = Color(red: 0.02, green: 0.06, blue: 0.14)
+        static let washOpacity = 0.48
+    }
+
+    /// Night's cool wash already darkens the wall, so the plain black dim is
+    /// softened — DAY/NIGHT × normal/modal layers never stack into black.
+    private var effectiveDim: Double {
+        guard nightMode else { return dim }
+        return dim >= Self.modalDim ? 0.20 : 0.06
+    }
 
     var body: some View {
         ZStack {
@@ -44,8 +60,15 @@ struct WallBackdrop: View {
 
             // Subtle dim between the environment and every foreground layer.
             // Pure color layer — negligible cost, never touches content.
-            Color.black.opacity(dim)
+            Color.black.opacity(effectiveDim)
                 .allowsHitTesting(false)
+
+            // Night Mode: cool wash over the same artwork — nighttime at The
+            // Wall, not dark mode. Foreground content is unaffected.
+            if nightMode {
+                Night.wash.opacity(Night.washOpacity)
+                    .allowsHitTesting(false)
+            }
 
             // Vignette keeps the chrome readable over a bright texture.
             LinearGradient(
@@ -245,32 +268,9 @@ struct StencilTitle: View {
     }
 }
 
-/// Rusted metal nameplate used for primary actions.
-struct RustPlateBackground: View {
-    var color: Color = WallTheme.rust
-
-    var body: some View {
-        ZStack {
-            if let image = UIImage(named: WallAsset.plate) {
-                Image(uiImage: image)
-                    .resizable(capInsets: EdgeInsets(top: 120, leading: 220, bottom: 120, trailing: 220), resizingMode: .stretch)
-            } else {
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [color, color.opacity(0.78), color.opacity(0.94)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay(Capsule().stroke(WallTheme.ink.opacity(0.45), lineWidth: 1.5))
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
-
-/// Big bolted action button, the app's primary call to action.
+/// Big primary action — a distressed dark surface with a thin industrial
+/// border and the tint as the accent edge. No plate artwork anywhere in the
+/// app; the rusty nameplate image has zero runtime references.
 struct PlateButton: View {
     let title: String
     var systemImage: String?
@@ -288,13 +288,35 @@ struct PlateButton: View {
                         .font(.system(size: 19, weight: .heavy))
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(WallTheme.paper)
             .shadow(color: .black.opacity(0.45), radius: 2, x: 0, y: 1)
             .frame(maxWidth: .infinity)
             .frame(height: 60)
-            .background { RustPlateBackground(color: tint) }
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            LinearGradient(
+                                colors: [WallTheme.ink.opacity(0.94), WallTheme.ink.opacity(0.80)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [tint.opacity(0.95), .white.opacity(0.20), tint.opacity(0.6)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.6
+                        )
+                }
+                .allowsHitTesting(false)
+            }
             .overlay(alignment: .leading) { bolt.padding(.leading, 14) }
             .overlay(alignment: .trailing) { bolt.padding(.trailing, 14) }
+            .wallShadow(radius: 6, y: 4)
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityLabel(title)

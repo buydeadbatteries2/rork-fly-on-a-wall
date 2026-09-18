@@ -43,7 +43,8 @@ enum MockWallData {
             buzzes: Int,
             interests: [BuzzCategory],
             status: FlyStatus,
-            joinedDaysAgo: Double
+            joinedDaysAgo: Double,
+            social: FlySocialLinks? = nil
         ) -> FlyProfile {
             FlyProfile(
                 id: id,
@@ -56,13 +57,15 @@ enum MockWallData {
                 buzzCount: buzzes,
                 interests: interests,
                 currentStatus: status,
+                socialLinks: social,
                 joinedAt: date(hoursAgo: joinedDaysAgo * 24)
             )
         }
 
         return [
             profile("fly-messyjessy", "@MessyJessy", "Jessy", "Mind your business. I don't.",
-                    followers: 14_820, score: 18_420, buzzes: 238, interests: [.relationships, .embarrassing], status: .hot, joinedDaysAgo: 410),
+                    followers: 14_820, score: 18_420, buzzes: 238, interests: [.relationships, .embarrassing], status: .hot, joinedDaysAgo: 410,
+                    social: FlySocialLinks(instagram: "instagram.com/messyjessy", tiktok: "tiktok.com/@messyjessy")),
             profile("fly-officefly", "@OfficeFly", "The Office Fly", "HR blocked me twice. I post anyway.",
                     followers: 9_310, score: 11_050, buzzes: 187, interests: [.workplace, .internet], status: .connected, joinedDaysAgo: 365),
             profile("fly-auntie", "@AuntieKnows", "Auntie", "I heard it from somebody who heard it from everybody.",
@@ -70,17 +73,20 @@ enum MockWallData {
             profile("fly-parkingpapi", "@ParkingLotPapi", "Papi", "Every lot has a legend. I am that legend.",
                     followers: 5_240, score: 6_130, buzzes: 96, interests: [.sports, .localBuzz], status: .local, joinedDaysAgo: 220),
             profile("fly-tealady", "@TeaLady44", "Tea Lady", "Steeped. Spilled. Repeat.",
-                    followers: 30_120, score: 34_560, buzzes: 508, interests: [.celebrity, .hotBuzz], status: .hot, joinedDaysAgo: 700),
+                    followers: 30_120, score: 34_560, buzzes: 508, interests: [.celebrity, .hotBuzz], status: .hot, joinedDaysAgo: 700,
+                    social: FlySocialLinks(instagram: "instagram.com/tealady44", youtube: "youtube.com/@tealady44")),
             profile("fly-buzzkill", "@BuzzKill", "BuzzKill", "Fact-checking your group chat since forever.",
                     followers: 4_180, score: 5_020, buzzes: 143, interests: [.workplace, .wtf], status: .inQuestion, joinedDaysAgo: 300),
             profile("fly-nosey", "@NoseyNeighbor", "The Neighbor", "My curtains are open for a reason.",
-                    followers: 11_730, score: 13_940, buzzes: 221, interests: [.localBuzz, .relationships], status: .local, joinedDaysAgo: 540),
+                    followers: 11_730, score: 13_940, buzzes: 221, interests: [.localBuzz, .relationships], status: .local, joinedDaysAgo: 540,
+                    social: FlySocialLinks(instagram: "instagram.com/noseyneighbor", x: "x.com/noseyneighbor", website: "noseyneighbor.blog")),
             profile("fly-backrow", "@BackRowFly", "Back Row", "I hear everything from the back.",
                     followers: 7_660, score: 8_410, buzzes: 164, interests: [.music, .internet], status: .new, joinedDaysAgo: 95),
             profile("fly-gremlin", "@GossipGremlin", "The Gremlin", "Fed on drama. Thriving.",
                     followers: 13_240, score: 15_780, buzzes: 289, interests: [.wtf, .hotBuzz, .embarrassing], status: .connected, joinedDaysAgo: 480),
             profile("fly-stadium", "@StadiumStinger", "Stinger", "Section 12, row 3, always loud.",
-                    followers: 18_990, score: 21_340, buzzes: 176, interests: [.sports, .hotBuzz], status: .strongConnection, joinedDaysAgo: 390),
+                    followers: 18_990, score: 21_340, buzzes: 176, interests: [.sports, .hotBuzz], status: .strongConnection, joinedDaysAgo: 390,
+                    social: FlySocialLinks(x: "x.com/stadiumstinger")),
             profile("fly-karaoke", "@KaraokeKrash", "Krash", "The mic is a lifestyle.",
                     followers: 3_910, score: 4_270, buzzes: 121, interests: [.music, .embarrassing], status: .oldBuzz, joinedDaysAgo: 260),
             profile("fly-cube417", "@Cube417", "Cube 417", "Corporate life is a documentary and I have clips.",
@@ -88,7 +94,8 @@ enum MockWallData {
             profile("fly-lurker", "@LateNightLurker", "The Lurker", "Asleep during the day. Aware at 3am.",
                     followers: 9_580, score: 10_660, buzzes: 267, interests: [.internet, .wtf], status: .new, joinedDaysAgo: 60),
             profile("fly-tinfoil", "@TinFoilTina", "Tina", "I connect dots you didn't know existed.",
-                    followers: 15_660, score: 19_120, buzzes: 342, interests: [.wtf, .celebrity], status: .strongConnection, joinedDaysAgo: 575),
+                    followers: 15_660, score: 19_120, buzzes: 342, interests: [.wtf, .celebrity], status: .strongConnection, joinedDaysAgo: 575,
+                    social: FlySocialLinks(youtube: "youtube.com/@tinfoiltina", facebook: "facebook.com/tinfoiltina")),
             profile("fly-barflies", "@BarfliesOnly", "Barflies", "What happens at happy hour gets posted.",
                     followers: 10_240, score: 12_380, buzzes: 198, interests: [.relationships, .music], status: .oldBuzz, joinedDaysAgo: 450),
 

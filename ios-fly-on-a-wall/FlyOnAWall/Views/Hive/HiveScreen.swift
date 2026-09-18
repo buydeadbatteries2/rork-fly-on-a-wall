@@ -17,6 +17,16 @@ struct HiveScreen: View {
     @State private var filter: BuzzCategory?
     @State private var showShare: Bool = false
 
+    // My Hive settings: Night Mode + the local social-links editor.
+    @AppStorage("flyNightMode") private var nightMode = false
+    @State private var showSocialEditor = false
+    @State private var instagramLink = ""
+    @State private var tiktokLink = ""
+    @State private var youtubeLink = ""
+    @State private var xLink = ""
+    @State private var facebookLink = ""
+    @State private var websiteLink = ""
+
     private var fly: FlyProfile? { store.profile(id: flyID) }
     private var isMe: Bool { fly?.isMe ?? false }
     private var isFollowing: Bool { store.isFollowing(flyID) }
@@ -73,6 +83,7 @@ struct HiveScreen: View {
 
                         if isMe {
                             followingSection
+                            settingsSection
                         }
 
                         Color.clear.frame(height: WallMetrics.tabBarClearance)
@@ -121,6 +132,9 @@ struct HiveScreen: View {
                     Spacer(minLength: 0)
                 }
                 statusChip(fly)
+                if let links = fly.socialLinks, !links.isEmpty {
+                    SocialLinksRow(links: links)
+                }
             }
         }
     }
@@ -193,9 +207,12 @@ struct HiveScreen: View {
                             .fill(WallTheme.ink.opacity(0.85))
                             .overlay(Capsule().stroke(WallTheme.teal.opacity(0.9), lineWidth: 1.6))
                     } else {
-                        RustPlateBackground(color: WallTheme.teal)
+                        Capsule()
+                            .fill(WallTheme.teal)
+                            .overlay(Capsule().stroke(WallTheme.ink.opacity(0.45), lineWidth: 1.5))
                     }
                 }
+                .wallShadow(radius: 5, y: 3)
             }
             .buttonStyle(PressableButtonStyle())
             .accessibilityLabel(isFollowing ? "Following \(fly.username)" : "Follow \(fly.username)")
@@ -214,7 +231,12 @@ struct HiveScreen: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)
-                .background { RustPlateBackground(color: WallTheme.inkSoft) }
+                .background {
+                    Capsule()
+                        .fill(WallTheme.ink.opacity(0.85))
+                        .overlay(Capsule().stroke(.white.opacity(0.22), lineWidth: 1.4))
+                }
+                .wallShadow(radius: 5, y: 3)
             }
             .buttonStyle(PressableButtonStyle())
             .accessibilityLabel("Share hive")
@@ -275,13 +297,13 @@ struct HiveScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         } else {
-            VStack(spacing: 4) {
+            // Wide, wall-like gaps: each Buzz reads as its own pasted scrap.
+            VStack(spacing: 18) {
                 ForEach(buzzes) { buzz in
                     BuzzRow(buzz: buzz, showsAuthor: !isMe) {
                         Haptics.tap()
                         path.append(WallRoute.buzz(buzz.id))
                     }
-                    .padding(.vertical, 3)
                 }
             }
         }
@@ -316,5 +338,152 @@ struct HiveScreen: View {
                 }
             }
         }
+    }
+
+    // MARK: - My Hive settings
+
+    /// My Hive only: Night Mode toggle and the local social-links editor.
+    private var settingsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            PatchedLabel(text: "WALL SETTINGS", size: 17)
+
+            TapedPaper(rotation: 0.7, padding: 16) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Toggle(isOn: $nightMode) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Image(systemName: nightMode ? "moon.stars.fill" : "sun.max.fill")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(nightMode ? WallTheme.teal : WallTheme.rust)
+                                Text(nightMode ? "NIGHT MODE" : "DAY MODE")
+                                    .font(WallFont.stencil(17))
+                                    .foregroundStyle(WallTheme.ink)
+                            }
+                            Text("The same wall after dark. Foreground stays bright.")
+                                .font(WallFont.meta(12))
+                                .foregroundStyle(WallTheme.inkSoft)
+                        }
+                    }
+                    .tint(WallTheme.rust)
+
+                    Divider()
+                        .overlay(WallTheme.inkSoft.opacity(0.3))
+
+                    socialLinksEditor
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var socialLinksEditor: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("YOUR SOCIAL LINKS")
+                    .font(WallFont.stamp(13))
+                    .kerning(0.8)
+                    .foregroundStyle(WallTheme.ink)
+                Spacer(minLength: 8)
+                Button {
+                    Haptics.tap()
+                    if !showSocialEditor { loadSocialFields() }
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showSocialEditor.toggle()
+                    }
+                } label: {
+                    Text(showSocialEditor ? "DONE" : "EDIT SOCIAL LINKS")
+                        .font(WallFont.stamp(11))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(showSocialEditor ? WallTheme.teal : WallTheme.rust))
+                }
+                .buttonStyle(PressableButtonStyle(scale: 0.93))
+                .accessibilityLabel("Edit social links")
+            }
+
+            if showSocialEditor {
+                socialLinkField("Instagram", placeholder: "instagram.com/you", text: $instagramLink)
+                socialLinkField("TikTok", placeholder: "tiktok.com/@you", text: $tiktokLink)
+                socialLinkField("YouTube", placeholder: "youtube.com/@you", text: $youtubeLink)
+                socialLinkField("X", placeholder: "x.com/you", text: $xLink)
+                socialLinkField("Facebook", placeholder: "facebook.com/you", text: $facebookLink)
+                socialLinkField("Website", placeholder: "yoursite.com", text: $websiteLink)
+
+                Button {
+                    Haptics.tap()
+                    saveSocialLinks()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showSocialEditor = false
+                    }
+                } label: {
+                    Text("SAVE LINKS")
+                        .font(WallFont.stamp(13))
+                        .kerning(0.8)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 44)
+                        .background(Capsule().fill(WallTheme.rust))
+                }
+                .buttonStyle(PressableButtonStyle())
+            } else if let links = store.me.socialLinks, !links.isEmpty {
+                SocialLinksRow(links: links)
+            } else {
+                Text("No links yet. Add where the wall can find you.")
+                    .font(WallFont.meta(12))
+                    .foregroundStyle(WallTheme.inkSoft)
+            }
+        }
+    }
+
+    private func socialLinkField(_ label: String, placeholder: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label.uppercased())
+                .font(WallFont.stamp(10))
+                .foregroundStyle(WallTheme.inkSoft)
+            TextField(placeholder, text: text)
+                .font(WallFont.meta(13))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
+                .background {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(WallTheme.paper.opacity(0.9))
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(WallTheme.inkSoft.opacity(0.4), lineWidth: 1))
+                }
+        }
+    }
+
+    private func loadSocialFields() {
+        let links = store.me.socialLinks ?? FlySocialLinks()
+        instagramLink = links.instagram ?? ""
+        tiktokLink = links.tiktok ?? ""
+        youtubeLink = links.youtube ?? ""
+        xLink = links.x ?? ""
+        facebookLink = links.facebook ?? ""
+        websiteLink = links.website ?? ""
+    }
+
+    private func saveSocialLinks() {
+        store.updateMySocialLinks(
+            FlySocialLinks(
+                instagram: instagramLink.trimmedOrNil,
+                tiktok: tiktokLink.trimmedOrNil,
+                youtube: youtubeLink.trimmedOrNil,
+                x: xLink.trimmedOrNil,
+                facebook: facebookLink.trimmedOrNil,
+                website: websiteLink.trimmedOrNil
+            )
+        )
+    }
+}
+
+private extension String {
+    /// Nil for whitespace-only input, so empty fields clear stored links.
+    var trimmedOrNil: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }

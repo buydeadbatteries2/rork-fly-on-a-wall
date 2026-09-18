@@ -88,12 +88,14 @@ struct ExploreScreen: View {
     private func buzzSection(emoji: String, title: String, buzzes: [Buzz]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHeader(emoji, title)
-            ForEach(buzzes) { buzz in
-                BuzzRow(buzz: buzz) {
-                    Haptics.tap()
-                    path.append(WallRoute.buzz(buzz.id))
+            // Wide wall-like gaps: each preview reads as its own pasted scrap.
+            VStack(spacing: 18) {
+                ForEach(buzzes) { buzz in
+                    BuzzRow(buzz: buzz) {
+                        Haptics.tap()
+                        path.append(WallRoute.buzz(buzz.id))
+                    }
                 }
-                .padding(.vertical, 3)
             }
         }
     }
@@ -130,13 +132,12 @@ struct ExploreScreen: View {
                             .foregroundStyle(WallTheme.ink)
                     }
                 } else {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 18) {
                         ForEach(browseBuzzes) { buzz in
                             BuzzRow(buzz: buzz) {
                                 Haptics.tap()
                                 path.append(WallRoute.buzz(buzz.id))
                             }
-                            .padding(.vertical, 3)
                         }
                     }
                 }
