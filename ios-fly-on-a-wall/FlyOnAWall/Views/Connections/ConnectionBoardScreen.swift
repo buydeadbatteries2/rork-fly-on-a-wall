@@ -265,8 +265,8 @@ struct ConnectionBoardScreen: View {
 
             StencilTitle(text: "CONNECTION BOARD", size: 27)
             Text("BUZZES MAY CONNECT. PEOPLE ARE NEVER IDENTIFIED.")
-                .font(WallFont.stamp(9))
-                .foregroundStyle(WallTheme.ink.opacity(0.75))
+                .font(WallFont.stamp(10))
+                .foregroundStyle(WallTheme.ink.opacity(0.9))
 
             if let swarm {
                 swarmBanner(swarm)

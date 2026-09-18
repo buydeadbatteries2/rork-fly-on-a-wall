@@ -102,6 +102,8 @@ private struct ProceduralWall: View {
 }
 
 /// A piece of aged paper taped to the wall. Content is laid out on top.
+/// A translucent cream wash lifts stains and shadows in the texture so dark
+/// text stays readable, while torn edges and grain stay visible around it.
 struct TapedPaper<Content: View>: View {
     var rotation: Double = -1.2
     var padding: CGFloat = 18
@@ -116,6 +118,9 @@ struct TapedPaper<Content: View>: View {
                     if let image = UIImage(named: WallAsset.paper) {
                         Image(uiImage: image)
                             .resizable(capInsets: EdgeInsets(top: 90, leading: 90, bottom: 90, trailing: 90), resizingMode: .stretch)
+                        // Cream wash for text contrast (readability pass).
+                        Rectangle()
+                            .fill(WallTheme.paper.opacity(0.42))
                     } else {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(WallTheme.paper)
@@ -138,6 +143,74 @@ struct TapedPaper<Content: View>: View {
             .fill(Color(red: 0.87, green: 0.82, blue: 0.68).opacity(0.72))
             .frame(width: 56, height: 20)
             .overlay(Rectangle().stroke(.white.opacity(0.25), lineWidth: 0.5))
+    }
+}
+
+/// A dark painted patch on the wall carrying section headers and informational
+/// copy: the wall gives atmosphere, information gets a surface. Reads as a
+/// painted/stenciled wall patch, not a white card.
+struct WallPatch: View {
+    let title: String
+    var subline: String? = nil
+    /// Larger stencil size for screen titles; smaller for section headers.
+    var titleSize: CGFloat = 22
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(WallFont.stencil(titleSize))
+                .kerning(1.2)
+                .foregroundStyle(WallTheme.paper)
+            if let subline {
+                Text(subline)
+                    .font(WallFont.meta(13))
+                    .foregroundStyle(WallTheme.paper.opacity(0.92))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(WallTheme.ink.opacity(0.60))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                )
+        }
+        .overlay(alignment: .topLeading) {
+            Rectangle()
+                .fill(Color(red: 0.87, green: 0.82, blue: 0.68).opacity(0.6))
+                .frame(width: 44, height: 14)
+                .rotationEffect(.degrees(-14))
+                .offset(x: -5, y: -8)
+                .allowsHitTesting(false)
+        }
+        .rotationEffect(.degrees(-0.5))
+        .wallShadow(radius: 7, y: 4)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// One-line version of the painted patch for small labels like "SAY YOUR PIECE".
+struct PatchedLabel: View {
+    let text: String
+    var size: CGFloat = 15
+
+    var body: some View {
+        Text(text)
+            .font(WallFont.stencil(size))
+            .kerning(1.0)
+            .foregroundStyle(WallTheme.paper)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(WallTheme.ink.opacity(0.60))
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.12), lineWidth: 1))
+            }
+            .wallShadow(radius: 5, y: 3)
     }
 }
 

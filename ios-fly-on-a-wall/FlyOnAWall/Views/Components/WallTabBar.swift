@@ -120,8 +120,8 @@ struct WallTabBar: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(isSelected ? WallTheme.rust : WallTheme.ink.opacity(0.62))
-            .shadow(color: .white.opacity(0.25), radius: 0, x: 0, y: 1)
+            .foregroundStyle(isSelected ? WallTheme.rust : WallTheme.ink.opacity(0.85))
+            .shadow(color: .white.opacity(0.3), radius: 0, x: 0, y: 1)
             .frame(maxWidth: .infinity)
             .frame(height: WallMetrics.tabBarHeight)
             .contentShape(Rectangle())
@@ -161,7 +161,7 @@ struct WallTabBar: View {
                 Text(tab.title)
                     .font(WallFont.stamp(10))
                     .kerning(0.4)
-                    .foregroundStyle(isSelected ? WallTheme.rust : WallTheme.ink.opacity(0.62))
+                    .foregroundStyle(isSelected ? WallTheme.rust : WallTheme.ink.opacity(0.85))
                     .offset(y: -8)
             }
             .frame(maxWidth: .infinity)

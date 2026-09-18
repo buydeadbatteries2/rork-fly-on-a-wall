@@ -116,23 +116,24 @@ struct BuzzingFly: View {
     private var usernameTag: some View {
         if let username {
             Text(username)
-                .font(WallFont.stamp(max(9, size * 0.26)))
+                .font(WallFont.stamp(max(10, size * 0.28)))
                 .kerning(0.4)
-                .foregroundStyle(isEmphasized ? WallTheme.rust : WallTheme.ink.opacity(0.85))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .foregroundStyle(isEmphasized ? WallTheme.ink : WallTheme.ink.opacity(0.9))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
                 .background {
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(WallTheme.paper.opacity(isEmphasized ? 0.97 : 0.82))
+                        .fill(WallTheme.paper.opacity(isEmphasized ? 1.0 : 0.92))
                         .overlay(
                             RoundedRectangle(cornerRadius: 3)
-                                .stroke(WallTheme.inkSoft.opacity(isEmphasized ? 0.6 : 0.3), lineWidth: 1)
+                                .stroke(isEmphasized ? WallTheme.rust : WallTheme.inkSoft.opacity(0.45), lineWidth: isEmphasized ? 1.6 : 1)
                         )
                 }
+                .shadow(color: .black.opacity(isEmphasized ? 0.45 : 0.25), radius: isEmphasized ? 4 : 2, x: 0, y: 1)
                 .rotationEffect(.degrees(-2))
                 .offset(y: size * 0.62 + 12)
-                .scaleEffect(isEmphasized ? 1.15 : 1)
-                .opacity(isEmphasized ? 1 : 0.6)
+                .scaleEffect(isEmphasized ? 1.2 : 1)
+                .opacity(isEmphasized ? 1 : 0.78)
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isEmphasized)
                 .allowsHitTesting(false)
         }

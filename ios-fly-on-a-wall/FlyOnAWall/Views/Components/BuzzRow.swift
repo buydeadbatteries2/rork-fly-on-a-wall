@@ -31,24 +31,24 @@ struct BuzzRow: View {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             Text(buzz.category.emoji)
-                                .font(.system(size: 11))
+                                .font(.system(size: 12))
                             Text(buzz.category.title)
-                                .font(WallFont.stamp(9))
+                                .font(WallFont.stamp(10))
                                 .foregroundStyle(WallTheme.inkSoft)
                             if showsAuthor {
                                 Text(buzz.authorUsername)
-                                    .font(WallFont.stamp(9))
+                                    .font(WallFont.stamp(10))
                                     .foregroundStyle(WallTheme.rust)
                             }
                         }
                         Text(buzz.text)
-                            .font(WallFont.marker(14, weight: .regular))
+                            .font(WallFont.marker(15, weight: .regular))
                             .foregroundStyle(WallTheme.ink)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                         Text("😂 \(buzz.reactionCount)  ·  💬 \(buzz.buzzBackCount)  ·  👀 \(buzz.iWasThereCount)")
-                            .font(WallFont.stamp(10))
+                            .font(WallFont.meta(12))
                             .foregroundStyle(WallTheme.inkSoft)
                     }
                     Spacer(minLength: 0)

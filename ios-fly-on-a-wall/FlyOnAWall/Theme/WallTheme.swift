@@ -41,6 +41,12 @@ enum WallFont {
     static func stamp(_ size: CGFloat) -> Font {
         .system(size: size, weight: .heavy, design: .default).width(.compressed)
     }
+
+    /// Clean sans-serif voice for METADATA — counts, timestamps, helper copy.
+    /// Never thin: semibold keeps it legible over textured surfaces.
+    static func meta(_ size: CGFloat, weight: Font.Weight = .semibold) -> Font {
+        .system(size: size, weight: weight, design: .default)
+    }
 }
 
 /// Bundled artwork names.

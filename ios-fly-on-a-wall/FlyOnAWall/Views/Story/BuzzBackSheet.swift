@@ -65,10 +65,7 @@ struct BuzzBackSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("SAY YOUR PIECE")
-                        .font(WallFont.stencil(15))
-                        .foregroundStyle(WallTheme.paper)
-                        .shadow(color: .black.opacity(0.5), radius: 3)
+                    PatchedLabel(text: "SAY YOUR PIECE", size: 15)
 
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 6)

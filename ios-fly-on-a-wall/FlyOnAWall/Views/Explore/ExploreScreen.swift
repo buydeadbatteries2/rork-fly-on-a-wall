@@ -51,9 +51,9 @@ struct ExploreScreen: View {
                     VStack(alignment: .leading, spacing: 3) {
                         StencilTitle(text: "EXPLORE THE BUZZ", size: 36)
                         Text("Where the wall is loudest right now.")
-                            .font(WallFont.marker(15))
-                            .foregroundStyle(WallTheme.ink.opacity(0.85))
-                            .shadow(color: WallTheme.bone.opacity(0.5), radius: 0, x: 1, y: 1)
+                            .font(WallFont.meta(13))
+                            .foregroundStyle(WallTheme.ink)
+                            .shadow(color: WallTheme.bone.opacity(0.6), radius: 0, x: 1, y: 1)
                     }
                     .padding(.top, 8)
 
@@ -79,11 +79,9 @@ struct ExploreScreen: View {
 
     // MARK: - Sections
 
+    /// Section headers sit on a painted wall patch so they never fight the texture.
     private func sectionHeader(_ emoji: String, _ title: String) -> some View {
-        Text("\(emoji) \(title)")
-            .font(WallFont.stencil(22))
-            .foregroundStyle(WallTheme.paper)
-            .shadow(color: .black.opacity(0.55), radius: 4, y: 2)
+        WallPatch(title: "\(emoji) \(title)", titleSize: 20)
     }
 
     @ViewBuilder
@@ -126,10 +124,10 @@ struct ExploreScreen: View {
 
             if let browseCategory {
                 if browseBuzzes.isEmpty {
-                    TapedPaper(rotation: 0.8, padding: 13) {
+                    TapedPaper(rotation: 0.8, padding: 14) {
                         Text("Nothing buzzing in \(browseCategory.title) yet.")
-                            .font(WallFont.marker(13, weight: .regular))
-                            .foregroundStyle(WallTheme.inkSoft)
+                            .font(WallFont.marker(14, weight: .regular))
+                            .foregroundStyle(WallTheme.ink)
                     }
                 } else {
                     VStack(spacing: 4) {
@@ -155,24 +153,25 @@ struct ExploreScreen: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Text(category.emoji).font(.system(size: 12))
+                Text(category.emoji).font(.system(size: 13))
                 Text(category.title)
-                    .font(WallFont.stamp(10))
+                    .font(WallFont.stamp(11))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+            .foregroundStyle(isActive ? .white : WallTheme.ink)
             .padding(.horizontal, 10)
             .padding(.vertical, 9)
             .frame(maxWidth: .infinity, minHeight: 40)
             .background(
                 RoundedRectangle(cornerRadius: 5)
-                    .fill(isActive ? category.tint : WallTheme.paper.opacity(0.9))
+                    .fill(isActive ? category.tint : WallTheme.paper.opacity(0.94))
                     .overlay(
                         RoundedRectangle(cornerRadius: 5)
-                            .stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.4), lineWidth: 1.2)
+                            .stroke(isActive ? WallTheme.ink.opacity(0.6) : WallTheme.inkSoft.opacity(0.5), lineWidth: isActive ? 1.6 : 1.2)
                     )
             )
+            .wallShadow(radius: 4, y: 2)
         }
         .buttonStyle(PressableButtonStyle(scale: 0.93))
         .accessibilityLabel("Browse \(category.title)")
@@ -198,7 +197,7 @@ struct ExploreScreen: View {
                                     .font(WallFont.stencil(17))
                                     .foregroundStyle(WallTheme.ink)
                                 Text("\(store.flyCount(for: swarm)) FLIES · \(swarm.buzzCount) BUZZES · \(swarm.teaser)")
-                                    .font(WallFont.marker(12, weight: .regular))
+                                    .font(WallFont.meta(12, weight: .medium))
                                     .foregroundStyle(WallTheme.inkSoft)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)

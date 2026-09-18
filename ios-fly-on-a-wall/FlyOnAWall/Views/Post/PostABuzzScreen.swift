@@ -42,9 +42,9 @@ struct PostABuzzScreen: View {
                 VStack(alignment: .leading, spacing: 2) {
                     StencilTitle(text: "POST A BUZZ", size: 40)
                     Text("You're the Fly. This is your Buzz.")
-                        .font(WallFont.marker(15))
-                        .foregroundStyle(WallTheme.ink.opacity(0.8))
-                        .shadow(color: WallTheme.bone.opacity(0.5), radius: 0, x: 1, y: 1)
+                        .font(WallFont.meta(13))
+                        .foregroundStyle(WallTheme.ink)
+                        .shadow(color: WallTheme.bone.opacity(0.6), radius: 0, x: 1, y: 1)
                 }
                 .padding(.top, 6)
 
@@ -54,7 +54,7 @@ struct PostABuzzScreen: View {
                             .font(WallFont.stencil(20))
                             .foregroundStyle(WallTheme.ink)
                         Text("What did you see, hear, do, or need to get off your chest?")
-                            .font(WallFont.marker(15, weight: .regular))
+                            .font(WallFont.meta(14))
                             .foregroundStyle(WallTheme.inkSoft)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -75,7 +75,7 @@ struct PostABuzzScreen: View {
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 PlateButton(title: "POST MY BUZZ", systemImage: "ant.fill") {
                     post()
                 }
@@ -83,12 +83,19 @@ struct PostABuzzScreen: View {
                 .disabled(!canPost)
 
                 Text("Your Buzz flies under your handle. That's the deal.")
-                    .font(WallFont.stamp(10))
-                    .foregroundStyle(WallTheme.paper.opacity(0.85))
+                    .font(WallFont.meta(12))
+                    .foregroundStyle(WallTheme.paper.opacity(0.95))
                     .shadow(color: .black.opacity(0.6), radius: 3)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 10)
             .padding(.bottom, WallMetrics.tabBarClearance - 18)
+            .background {
+                // Painted scrim so the CTA never fights the robot/artwork.
+                LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
         }
         .toolbar {
             ToolbarItem(placement: .keyboard) {
@@ -164,10 +171,7 @@ struct PostABuzzScreen: View {
     /// ONE primary category — single select, required.
     private var categoryPicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("PICK ONE CATEGORY")
-                .font(WallFont.stencil(16))
-                .foregroundStyle(WallTheme.paper)
-                .shadow(color: .black.opacity(0.5), radius: 3)
+            PatchedLabel(text: "PICK ONE CATEGORY", size: 16)
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 148), spacing: 8)], spacing: 8) {
                 ForEach(BuzzCategory.allCases) { option in
@@ -197,18 +201,19 @@ struct PostABuzzScreen: View {
                         .font(.system(size: 11, weight: .black))
                 }
             }
-            .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+            .foregroundStyle(isActive ? .white : WallTheme.ink)
             .padding(.horizontal, 11)
             .padding(.vertical, 12)
             .frame(minHeight: 44)
             .background(
                 RoundedRectangle(cornerRadius: 7)
-                    .fill(isActive ? option.tint : WallTheme.paper.opacity(0.92))
+                    .fill(isActive ? option.tint : WallTheme.paper.opacity(0.95))
                     .overlay(
                         RoundedRectangle(cornerRadius: 7)
-                            .stroke(isActive ? option.tint : WallTheme.inkSoft.opacity(0.45), lineWidth: 1.3)
+                            .stroke(isActive ? WallTheme.ink.opacity(0.55) : WallTheme.inkSoft.opacity(0.5), lineWidth: isActive ? 1.6 : 1.3)
                     )
             )
+            .wallShadow(radius: 4, y: 2)
         }
         .buttonStyle(PressableButtonStyle(scale: 0.95))
         .accessibilityLabel("Category \(option.title)")
@@ -218,14 +223,11 @@ struct PostABuzzScreen: View {
     /// Up to THREE tags, suggested from the chosen category.
     private func tagPicker(_ selected: BuzzCategory) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Text("TAGS")
-                    .font(WallFont.stencil(16))
-                    .foregroundStyle(WallTheme.paper)
-                    .shadow(color: .black.opacity(0.5), radius: 3)
+            HStack(spacing: 8) {
+                PatchedLabel(text: "TAGS", size: 16)
                 Text("(UP TO 3)")
-                    .font(WallFont.stamp(10))
-                    .foregroundStyle(WallTheme.paper.opacity(0.7))
+                    .font(WallFont.meta(12))
+                    .foregroundStyle(WallTheme.paper)
                     .shadow(color: .black.opacity(0.5), radius: 2)
             }
 
@@ -322,14 +324,15 @@ private struct FlowTags: View {
         } label: {
             Text(tag)
                 .font(WallFont.stamp(12))
-                .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+                .foregroundStyle(isActive ? .white : WallTheme.ink)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(
                     Capsule()
-                        .fill(isActive ? WallTheme.teal : WallTheme.paper.opacity(0.92))
-                        .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.45), lineWidth: 1.2))
+                        .fill(isActive ? WallTheme.teal : WallTheme.paper.opacity(0.95))
+                        .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.5), lineWidth: 1.2))
                 )
+                .wallShadow(radius: 4, y: 2)
         }
         .buttonStyle(PressableButtonStyle(scale: 0.93))
         .accessibilityLabel("Tag \(tag)")

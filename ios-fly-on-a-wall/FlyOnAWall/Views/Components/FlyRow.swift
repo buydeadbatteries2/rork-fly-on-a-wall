@@ -25,25 +25,25 @@ struct FlyRow: View {
                         .frame(width: 46, height: 38)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(fly.username)
-                            .font(WallFont.stencil(16))
+                            .font(WallFont.stencil(17))
                             .foregroundStyle(WallTheme.ink)
                         Text("\"\(fly.tagline)\"")
-                            .font(WallFont.marker(12, weight: .regular))
+                            .font(WallFont.marker(13, weight: .regular))
                             .foregroundStyle(WallTheme.inkSoft)
                             .lineLimit(1)
                         HStack(spacing: 6) {
                             Text(fly.currentStatus.title)
-                                .font(WallFont.stamp(8))
+                                .font(WallFont.stamp(9))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 3)
-                                .background(Capsule().fill(fly.currentStatus.tint.opacity(0.9)))
+                                .background(Capsule().fill(fly.currentStatus.tint.opacity(0.95)))
                             Text("\(fly.followerDisplay) FOLLOWERS")
-                                .font(WallFont.stamp(9))
+                                .font(WallFont.meta(11))
                                 .foregroundStyle(WallTheme.inkSoft)
                             if store.isFollowing(fly.id) {
                                 Image(systemName: "checkmark")
-                                    .font(.system(size: 9, weight: .black))
+                                    .font(.system(size: 10, weight: .black))
                                     .foregroundStyle(WallTheme.teal)
                             }
                         }

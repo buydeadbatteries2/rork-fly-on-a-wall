@@ -65,10 +65,7 @@ struct IWasThereSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("ADD YOUR SIDE")
-                        .font(WallFont.stencil(15))
-                        .foregroundStyle(WallTheme.paper)
-                        .shadow(color: .black.opacity(0.5), radius: 3)
+                    PatchedLabel(text: "ADD YOUR SIDE", size: 15)
 
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 6)

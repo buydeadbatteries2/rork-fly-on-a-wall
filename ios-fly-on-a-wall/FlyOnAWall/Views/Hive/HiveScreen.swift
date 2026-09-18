@@ -110,12 +110,12 @@ struct HiveScreen: View {
                             .foregroundStyle(WallTheme.ink)
                         if !isMe {
                             Text(fly.displayName)
-                                .font(WallFont.stamp(11))
+                                .font(WallFont.stamp(12))
                                 .foregroundStyle(WallTheme.rust)
                         }
                         Text("\"\(fly.tagline)\"")
-                            .font(WallFont.marker(14, weight: .regular))
-                            .foregroundStyle(WallTheme.inkSoft)
+                            .font(WallFont.marker(15, weight: .regular))
+                            .foregroundStyle(WallTheme.ink)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer(minLength: 0)
@@ -129,10 +129,17 @@ struct HiveScreen: View {
         HStack(spacing: 5) {
             Circle()
                 .fill(fly.currentStatus.tint)
-                .frame(width: 8, height: 8)
+                .frame(width: 9, height: 9)
             Text("\(fly.currentStatus.title) · \(fly.currentStatus.blurb)")
-                .font(WallFont.stamp(9))
-                .foregroundStyle(WallTheme.inkSoft)
+                .font(WallFont.meta(11))
+                .foregroundStyle(WallTheme.ink)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(WallTheme.paper.opacity(0.75))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(WallTheme.inkSoft.opacity(0.3), lineWidth: 1))
         }
         .accessibilityElement(children: .combine)
     }
@@ -152,8 +159,8 @@ struct HiveScreen: View {
                 .font(WallFont.stencil(22))
                 .foregroundStyle(WallTheme.paper)
             Text(label)
-                .font(WallFont.stamp(9))
-                .foregroundStyle(WallTheme.paper.opacity(0.75))
+                .font(WallFont.stamp(10))
+                .foregroundStyle(WallTheme.paper.opacity(0.85))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
@@ -238,19 +245,20 @@ struct HiveScreen: View {
         } label: {
             HStack(spacing: 4) {
                 if let emoji {
-                    Text(emoji).font(.system(size: 11))
+                    Text(emoji).font(.system(size: 12))
                 }
                 Text(title)
-                    .font(WallFont.stamp(10))
+                    .font(WallFont.stamp(11))
             }
-            .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+            .foregroundStyle(isActive ? .white : WallTheme.ink)
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
             .background(
                 Capsule()
-                    .fill(isActive ? (category?.tint ?? WallTheme.ink) : WallTheme.paper.opacity(0.9))
-                    .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.45), lineWidth: 1.2))
+                    .fill(isActive ? (category?.tint ?? WallTheme.ink) : WallTheme.paper.opacity(0.94))
+                    .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.5), lineWidth: 1.2))
             )
+            .wallShadow(radius: 4, y: 2)
         }
         .buttonStyle(PressableButtonStyle(scale: 0.93))
     }
@@ -258,12 +266,12 @@ struct HiveScreen: View {
     @ViewBuilder
     private var buzzList: some View {
         if buzzes.isEmpty {
-            TapedPaper(rotation: 0.8, padding: 14) {
+            TapedPaper(rotation: 0.8, padding: 16) {
                 Text(isMe
                      ? "Nothing posted yet. The wall is waiting for it."
                      : "No buzz in this corner of the hive yet.")
-                    .font(WallFont.marker(14, weight: .regular))
-                    .foregroundStyle(WallTheme.inkSoft)
+                    .font(WallFont.marker(15, weight: .regular))
+                    .foregroundStyle(WallTheme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             }
         } else {
@@ -284,17 +292,19 @@ struct HiveScreen: View {
     private var followingSection: some View {
         let following = store.followedFlies
         VStack(alignment: .leading, spacing: 10) {
-            Text("FLIES YOU FOLLOW")
-                .font(WallFont.stencil(22))
-                .foregroundStyle(WallTheme.paper)
-                .shadow(color: .black.opacity(0.55), radius: 4, y: 2)
+            PatchedLabel(text: "FLIES YOU FOLLOW", size: 17)
 
             if following.isEmpty {
-                TapedPaper(rotation: -0.8, padding: 14) {
-                    Text("Follow a fly and their hive will keep buzzing here.")
-                        .font(WallFont.marker(14, weight: .regular))
-                        .foregroundStyle(WallTheme.inkSoft)
-                        .fixedSize(horizontal: false, vertical: true)
+                TapedPaper(rotation: -0.8, padding: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("No flies followed yet.")
+                            .font(WallFont.stencil(15))
+                            .foregroundStyle(WallTheme.ink)
+                        Text("Follow a fly on The Wall and their hive will keep buzzing here.")
+                            .font(WallFont.meta(13))
+                            .foregroundStyle(WallTheme.inkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             } else {
                 ForEach(following) { followed in

@@ -193,8 +193,8 @@ struct BuzzDetailScreen: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             Text(label.uppercased())
-                .font(WallFont.stamp(9))
-                .foregroundStyle(WallTheme.paper.opacity(0.7))
+                .font(WallFont.stamp(10))
+                .foregroundStyle(WallTheme.paper.opacity(0.85))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -224,7 +224,7 @@ struct BuzzDetailScreen: View {
                             .font(WallFont.stencil(17))
                             .foregroundStyle(WallTheme.ink)
                         Text("THESE BUZZES MAY CONNECT")
-                            .font(WallFont.stamp(9))
+                            .font(WallFont.stamp(10))
                             .foregroundStyle(WallTheme.inkSoft)
                     }
                     Spacer(minLength: 0)
@@ -380,19 +380,16 @@ struct BuzzDetailScreen: View {
         return Group {
             if !backs.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("THE BUZZ BACKS 💬")
-                        .font(WallFont.stencil(16))
-                        .foregroundStyle(WallTheme.paper)
-                        .shadow(color: .black.opacity(0.5), radius: 3)
+                    PatchedLabel(text: "THE BUZZ BACKS 💬", size: 16)
 
                     ForEach(backs) { back in
                         TapedPaper(rotation: Double(abs(back.id.hashValue % 3)) - 1.0, padding: 13) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(back.authorUsername)
-                                    .font(WallFont.stamp(10))
+                                    .font(WallFont.stamp(11))
                                     .foregroundStyle(WallTheme.rust)
                                 Text(back.text)
-                                    .font(WallFont.marker(14, weight: .regular))
+                                    .font(WallFont.marker(15, weight: .regular))
                                     .foregroundStyle(WallTheme.ink)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -405,10 +402,7 @@ struct BuzzDetailScreen: View {
 
     private func witnessNotes(_ buzz: Buzz) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("WHAT THE WITNESSES SAID 👀")
-                .font(WallFont.stencil(16))
-                .foregroundStyle(WallTheme.paper)
-                .shadow(color: .black.opacity(0.5), radius: 3)
+            PatchedLabel(text: "WHAT THE WITNESSES SAID 👀", size: 16)
 
             ForEach(store.claims(for: buzz.id)) { claim in
                 TapedPaper(rotation: 0.6, padding: 14) {
