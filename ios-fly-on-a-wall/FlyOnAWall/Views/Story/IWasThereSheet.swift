@@ -21,7 +21,7 @@ struct IWasThereSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: WallTheme.rust, tintStrength: 0.14)
+            WallBackdrop(tint: WallTheme.rust, tintStrength: 0.14, dim: WallBackdrop.modalDim)
 
             if didSubmit {
                 confirmation

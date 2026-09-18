@@ -21,7 +21,7 @@ struct BuzzBackSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: WallTheme.teal, tintStrength: 0.14)
+            WallBackdrop(tint: WallTheme.teal, tintStrength: 0.14, dim: WallBackdrop.modalDim)
 
             if didSubmit {
                 confirmation

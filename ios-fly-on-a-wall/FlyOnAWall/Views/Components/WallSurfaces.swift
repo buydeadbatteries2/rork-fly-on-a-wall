@@ -13,6 +13,15 @@ import SwiftUI
 struct WallBackdrop: View {
     var tint: Color? = nil
     var tintStrength: Double = 0.18
+    /// Environment dimming applied ABOVE the artwork and BELOW all foreground
+    /// UI. Standard screens use `standardDim`; modal presentations pass
+    /// `modalDim` so the environment recedes further behind the popup.
+    var dim: Double = WallBackdrop.standardDim
+
+    /// Standard screen dimming — grunge stays visible, foreground pops.
+    static let standardDim: Double = 0.18
+    /// Dimming behind an active modal/sheet (stronger, still not dark mode).
+    static let modalDim: Double = 0.40
 
     var body: some View {
         ZStack {
@@ -32,6 +41,11 @@ struct WallBackdrop: View {
             if let tint {
                 tint.opacity(tintStrength).blendMode(.multiply)
             }
+
+            // Subtle dim between the environment and every foreground layer.
+            // Pure color layer — negligible cost, never touches content.
+            Color.black.opacity(dim)
+                .allowsHitTesting(false)
 
             // Vignette keeps the chrome readable over a bright texture.
             LinearGradient(

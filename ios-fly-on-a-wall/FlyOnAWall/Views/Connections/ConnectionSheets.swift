@@ -22,7 +22,7 @@ struct ConnectionClueSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.12)
+            WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.12, dim: WallBackdrop.modalDim)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -179,7 +179,7 @@ struct BuzzInspectorSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: status.tint, tintStrength: 0.12)
+            WallBackdrop(tint: status.tint, tintStrength: 0.12, dim: WallBackdrop.modalDim)
 
             VStack(spacing: 16) {
                 Spacer()

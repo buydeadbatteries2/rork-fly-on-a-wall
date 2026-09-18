@@ -20,7 +20,7 @@ struct FlyPreviewSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: liveFly.currentStatus.tint, tintStrength: 0.12)
+            WallBackdrop(tint: liveFly.currentStatus.tint, tintStrength: 0.12, dim: WallBackdrop.modalDim)
 
             VStack(spacing: 12) {
                 // Info + Buzz card scrolls when a long Buzz needs more room;
@@ -30,8 +30,8 @@ struct FlyPreviewSheet: View {
                 }
                 .scrollBounceBehavior(.basedOnSize)
 
-                // The rusty plate appears ONCE — for the primary action only.
-                PlateButton(title: "READ THE BUZZ", systemImage: "arrow.turn.down.right") {
+                // Primary action — compact rust capsule, no plate artwork.
+                primaryButton(title: "READ THE BUZZ", systemImage: "arrow.turn.down.right") {
                     goTo(.buzz(currentBuzzID))
                 }
 
@@ -107,6 +107,37 @@ struct FlyPreviewSheet: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(Capsule().fill(category.tint))
+    }
+
+    /// Primary action — solid rust capsule (orange accent) with a thin
+    /// industrial border. Deliberately free of plate artwork so the preview
+    /// stays lightweight and the Buzz stays readable.
+    private func primaryButton(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Text(title)
+                    .font(WallFont.stamp(16))
+                    .kerning(1.2)
+                Image(systemName: systemImage)
+                    .font(.system(size: 14, weight: .heavy))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 52)
+            .background {
+                Capsule()
+                    .fill(WallTheme.rust)
+                    .overlay(Capsule().stroke(.white.opacity(0.28), lineWidth: 1))
+                    .allowsHitTesting(false)
+            }
+            .wallShadow(radius: 5, y: 3)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel(title)
     }
 
     /// Compact secondary action — distressed paper chip (or painted capsule

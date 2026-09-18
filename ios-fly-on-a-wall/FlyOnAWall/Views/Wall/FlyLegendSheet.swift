@@ -12,7 +12,7 @@ struct FlyLegendSheet: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: WallTheme.warmGray, tintStrength: 0.14)
+            WallBackdrop(tint: WallTheme.warmGray, tintStrength: 0.14, dim: WallBackdrop.modalDim)
 
             ScrollView {
                 VStack(spacing: 16) {

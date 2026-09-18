@@ -52,7 +52,7 @@ struct ConnectFlyFlow: View {
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.12)
+            WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.12, dim: WallBackdrop.modalDim)
 
             switch step {
             case .pick: picker
