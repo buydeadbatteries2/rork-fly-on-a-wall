@@ -22,56 +22,75 @@ struct FlyPreviewSheet: View {
         ZStack {
             WallBackdrop(tint: liveFly.currentStatus.tint, tintStrength: 0.12)
 
-            VStack(spacing: 14) {
-                Spacer()
-
-                TapedPaper(rotation: -1.4, padding: 18) {
-                    VStack(alignment: .leading, spacing: 9) {
-                        HStack(spacing: 11) {
-                            FlyView(status: liveFly.currentStatus, size: 30, wingsBeating: true)
-                                .frame(width: 48, height: 42)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(liveFly.username)
-                                    .font(WallFont.stencil(19))
-                                    .foregroundStyle(WallTheme.ink)
-                                Text("\(liveFly.currentStatus.title) · \(liveFly.followerDisplay) FOLLOWERS")
-                                    .font(WallFont.stamp(9))
-                                    .foregroundStyle(WallTheme.inkSoft)
-                            }
-                            Spacer(minLength: 0)
-                        }
-
-                        if let buzz = store.currentBuzz(for: liveFly) {
-                            categoryChip(buzz.category)
-                            Text(buzz.text)
-                                .font(WallFont.marker(17, weight: .medium))
-                                .foregroundStyle(WallTheme.ink)
-                                .lineLimit(4)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Text("😂 \(buzz.reactionCount)    💬 \(buzz.buzzBackCount)    👀 \(buzz.iWasThereCount)")
-                                .font(WallFont.stamp(11))
-                                .foregroundStyle(WallTheme.inkSoft)
-                        }
-                    }
+            VStack(spacing: 12) {
+                // Info + Buzz card scrolls when a long Buzz needs more room;
+                // the action area stays pinned and always tappable.
+                ScrollView {
+                    previewCard
                 }
+                .scrollBounceBehavior(.basedOnSize)
 
+                // The rusty plate appears ONCE — for the primary action only.
                 PlateButton(title: "READ THE BUZZ", systemImage: "arrow.turn.down.right") {
                     goTo(.buzz(currentBuzzID))
                 }
 
-                PlateButton(title: "VIEW HIVE", systemImage: "hexagon.fill", tint: WallTheme.teal) {
-                    goTo(.hive(liveFly.id))
+                HStack(spacing: 10) {
+                    chipButton(title: "VIEW HIVE", systemImage: "hexagon.fill", isFilled: false) {
+                        goTo(.hive(liveFly.id))
+                    }
+
+                    chipButton(
+                        title: isFollowing ? "FOLLOWING" : "FOLLOW FLY",
+                        systemImage: isFollowing ? "checkmark" : "ant.fill",
+                        isFilled: isFollowing
+                    ) {
+                        Haptics.tap()
+                        store.toggleFollow(liveFly.id)
+                    }
                 }
-
-                followButton
-
-                Spacer()
             }
             .padding(.horizontal, 24)
+            .padding(.top, 14)
+            .padding(.bottom, 16)
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    /// Header (avatar, handle, status, followers) plus the full current Buzz,
+    /// on one taped paper scrap. No line limit — long Buzzes scroll instead of
+    /// being clipped or hidden.
+    private var previewCard: some View {
+        TapedPaper(rotation: -1.4, padding: 18) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack(spacing: 11) {
+                    FlyView(status: liveFly.currentStatus, size: 30, wingsBeating: true)
+                        .frame(width: 48, height: 42)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(liveFly.username)
+                            .font(WallFont.stencil(19))
+                            .foregroundStyle(WallTheme.ink)
+                        Text("\(liveFly.currentStatus.title) · \(liveFly.followerDisplay) FOLLOWERS")
+                            .font(WallFont.meta(11))
+                            .foregroundStyle(WallTheme.ink)
+                    }
+                    Spacer(minLength: 0)
+                }
+
+                if let buzz = store.currentBuzz(for: liveFly) {
+                    categoryChip(buzz.category)
+                    Text(buzz.text)
+                        .font(WallFont.marker(17, weight: .medium))
+                        .foregroundStyle(WallTheme.ink)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("😂 \(buzz.reactionCount)    💬 \(buzz.buzzBackCount)    👀 \(buzz.iWasThereCount)")
+                        .font(WallFont.meta(12))
+                        .foregroundStyle(WallTheme.ink)
+                }
+            }
+        }
     }
 
     private var currentBuzzID: String {
@@ -82,7 +101,7 @@ struct FlyPreviewSheet: View {
         HStack(spacing: 5) {
             Text(category.emoji).font(.system(size: 11))
             Text(category.title)
-                .font(WallFont.stamp(9))
+                .font(WallFont.stamp(10))
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 8)
@@ -90,36 +109,45 @@ struct FlyPreviewSheet: View {
         .background(Capsule().fill(category.tint))
     }
 
-    private var followButton: some View {
-        Button {
-            Haptics.tap()
-            store.toggleFollow(liveFly.id)
-        } label: {
-            HStack(spacing: 9) {
-                Image(systemName: isFollowing ? "checkmark" : "ant.fill")
-                    .font(.system(size: 16, weight: .heavy))
-                Text(isFollowing ? "FOLLOWING" : "FOLLOW FLY")
-                    .font(WallFont.stencil(20))
-                    .kerning(1.2)
+    /// Compact secondary action — distressed paper chip (or painted capsule
+    /// when filled). No plate artwork, so the sheet never stacks heavy metal.
+    private func chipButton(
+        title: String,
+        systemImage: String,
+        isFilled: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 13, weight: .heavy))
+                Text(title)
+                    .font(WallFont.stamp(13))
+                    .kerning(0.8)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(isFilled ? .white : WallTheme.ink)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(minHeight: 48)
             .background {
                 ZStack {
-                    if isFollowing {
+                    if isFilled {
                         Capsule()
                             .fill(WallTheme.ink.opacity(0.85))
                             .overlay(Capsule().stroke(WallTheme.teal.opacity(0.9), lineWidth: 1.6))
                     } else {
-                        RustPlateBackground(color: WallTheme.teal)
+                        Capsule()
+                            .fill(WallTheme.paper.opacity(0.95))
+                            .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(0.5), lineWidth: 1.2))
                     }
                 }
                 .allowsHitTesting(false)
             }
+            .wallShadow(radius: 5, y: 3)
         }
         .buttonStyle(PressableButtonStyle())
-        .accessibilityLabel(isFollowing ? "Following \(liveFly.username)" : "Follow \(liveFly.username)")
+        .accessibilityLabel(title)
     }
 
     private func goTo(_ route: WallRoute) {
