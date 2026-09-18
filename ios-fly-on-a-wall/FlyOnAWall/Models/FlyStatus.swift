@@ -1,11 +1,15 @@
 //
-//  FlyCategory.swift
+//  FlyStatus.swift
 //  FlyOnAWall
+//
+//  The colour-coded system, reinterpreted for the blogger model: a Fly's
+//  colour is NOT its identity — it describes what is currently happening
+//  around that Fly's Buzz. The same Fly changes colours over time.
 //
 
 import SwiftUI
 
-/// Wing silhouettes give each category a shape cue on top of its colour.
+/// Wing silhouettes give each status a shape cue on top of its colour.
 enum WingStyle: String, Hashable, Codable {
     case round
     case jagged
@@ -15,7 +19,7 @@ enum WingStyle: String, Hashable, Codable {
     case long
 }
 
-/// Movement personality for a category of flies.
+/// Movement personality for a status of flies.
 struct FlyMotionProfile: Hashable, Codable {
     /// How long a single wander leg takes.
     var stepDuration: ClosedRange<Double>
@@ -35,8 +39,8 @@ struct FlyMotionProfile: Hashable, Codable {
     var trails: Bool
 }
 
-/// The eight fly types. Colour plus a second cue (symbol, wings, motion, glow).
-enum FlyCategory: String, CaseIterable, Identifiable, Hashable, Codable {
+/// The eight Fly statuses. Colour plus a second cue (symbol, wings, motion, glow).
+enum FlyStatus: String, CaseIterable, Identifiable, Hashable, Codable {
     case new
     case hot
     case local
@@ -50,7 +54,7 @@ enum FlyCategory: String, CaseIterable, Identifiable, Hashable, Codable {
 
     var title: String {
         switch self {
-        case .new: "NEW"
+        case .new: "NEW BUZZ"
         case .hot: "HOT"
         case .local: "LOCAL"
         case .inQuestion: "IN QUESTION"
@@ -61,17 +65,17 @@ enum FlyCategory: String, CaseIterable, Identifiable, Hashable, Codable {
         }
     }
 
-    /// Short line used on the legend and category banners.
+    /// What the colour says about the Fly's current Buzz.
     var blurb: String {
         switch self {
-        case .new: "Fresh off the wall. Still sticky."
-        case .hot: "Everybody is buzzing about these."
-        case .local: "Buzzing around your corner of the world."
-        case .inQuestion: "Stories where the details do not line up."
-        case .connected: "This fly touches other flies."
-        case .iWasThere: "Somebody else saw it happen."
-        case .strongConnection: "Several stories overlap on the same night."
-        case .oldBuzz: "Old stories that started buzzing again."
+        case .new: "This Fly just posted something fresh."
+        case .hot: "This Fly's current Buzz is blowing up."
+        case .local: "This Fly has Buzz in your area."
+        case .inQuestion: "This Fly's Buzz is being disputed."
+        case .connected: "This Fly has a Buzz touching other Buzzes."
+        case .iWasThere: "This Fly entered somebody else's Buzz."
+        case .strongConnection: "This Fly is tied into a strong connection."
+        case .oldBuzz: "An older Buzz from this Fly is buzzing again."
         }
     }
 

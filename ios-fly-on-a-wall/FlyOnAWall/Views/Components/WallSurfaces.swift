@@ -233,3 +233,35 @@ struct PressableButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.25, dampingFraction: 0.55), value: configuration.isPressed)
     }
 }
+
+/// Themed back control used on pushed wall screens.
+struct BackChip: View {
+    var title: String = "BACK"
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.tap()
+            action()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 13, weight: .black))
+                Text(title)
+                    .font(WallFont.stamp(12))
+            }
+            .foregroundStyle(WallTheme.ink)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(minHeight: 44)
+            .background {
+                Capsule()
+                    .fill(WallTheme.paper.opacity(0.92))
+                    .overlay(Capsule().stroke(WallTheme.inkSoft.opacity(0.5), lineWidth: 1.2))
+            }
+            .wallShadow(radius: 5, y: 3)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityLabel("Back")
+    }
+}

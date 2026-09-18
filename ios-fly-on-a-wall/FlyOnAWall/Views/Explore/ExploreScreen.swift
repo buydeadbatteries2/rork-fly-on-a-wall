@@ -2,7 +2,8 @@
 //  ExploreScreen.swift
 //  FlyOnAWall
 //
-//  Themed placeholder: Hot Buzz and Buzzing Around You.
+//  EXPLORE THE BUZZ — what's buzzing, browse categories, flies to follow,
+//  active swarms, fresh flies, local buzz. All mock, all local.
 //
 
 import SwiftUI
@@ -10,13 +11,35 @@ import SwiftUI
 struct ExploreScreen: View {
     @Binding var path: [WallRoute]
     @Environment(WallStore.self) private var store
+    @State private var browseCategory: BuzzCategory?
 
-    private var hotBuzz: [StoryFly] {
-        store.stories(in: .hot).sorted { $0.reactionCount > $1.reactionCount }.prefix(3).map { $0 }
+    private var whatsBuzzing: [Buzz] {
+        store.buzzes.sorted { $0.reactionCount > $1.reactionCount }.prefix(4).map { $0 }
     }
 
-    private var nearby: [StoryFly] {
-        store.stories(in: .local).prefix(3).map { $0 }
+    private var suggestedFlies: [FlyProfile] {
+        store.profiles
+            .filter { !$0.isMe && !store.isFollowing($0.id) }
+            .sorted { $0.followerCount > $1.followerCount }
+            .prefix(4)
+            .map { $0 }
+    }
+
+    private var freshFlies: [FlyProfile] {
+        store.profiles
+            .filter { !$0.isMe }
+            .sorted { $0.joinedAt > $1.joinedAt }
+            .prefix(3)
+            .map { $0 }
+    }
+
+    private var localBuzzes: [Buzz] {
+        store.buzzes.filter { $0.area != nil }.prefix(3).map { $0 }
+    }
+
+    private var browseBuzzes: [Buzz] {
+        guard let browseCategory else { return [] }
+        return store.buzzes(in: browseCategory).sorted { $0.reactionCount > $1.reactionCount }.prefix(3).map { $0 }
     }
 
     var body: some View {
@@ -26,7 +49,7 @@ struct ExploreScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 3) {
-                        StencilTitle(text: "EXPLORE", size: 42)
+                        StencilTitle(text: "EXPLORE THE BUZZ", size: 36)
                         Text("Where the wall is loudest right now.")
                             .font(WallFont.marker(15))
                             .foregroundStyle(WallTheme.ink.opacity(0.85))
@@ -34,20 +57,17 @@ struct ExploreScreen: View {
                     }
                     .padding(.top, 8)
 
-                    section(title: "HOT BUZZ", category: .hot, flies: hotBuzz)
-                    section(title: "BUZZING AROUND YOU", category: .local, flies: nearby)
+                    buzzSection(emoji: "🔥", title: "WHAT'S BUZZING", buzzes: whatsBuzzing)
 
-                    TapedPaper(rotation: 1.2, padding: 16) {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("MORE COMING")
-                                .font(WallFont.stencil(17))
-                                .foregroundStyle(WallTheme.rust)
-                            Text("Searching the wall, saved swarms, and buzzing corners are still being scraped off the bricks.")
-                                .font(WallFont.marker(14, weight: .regular))
-                                .foregroundStyle(WallTheme.inkSoft)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+                    browseSection
+
+                    flySection(emoji: "🪰", title: "FLIES TO FOLLOW", flies: suggestedFlies)
+
+                    swarmsSection
+
+                    flySection(emoji: "🆕", title: "FRESH FLIES", flies: freshFlies)
+
+                    buzzSection(emoji: "📍", title: "LOCAL BUZZ", buzzes: localBuzzes)
 
                     Color.clear.frame(height: WallMetrics.tabBarClearance)
                 }
@@ -57,51 +77,137 @@ struct ExploreScreen: View {
         }
     }
 
-    private func section(title: String, category: FlyCategory, flies: [StoryFly]) -> some View {
+    // MARK: - Sections
+
+    private func sectionHeader(_ emoji: String, _ title: String) -> some View {
+        Text("\(emoji) \(title)")
+            .font(WallFont.stencil(22))
+            .foregroundStyle(WallTheme.paper)
+            .shadow(color: .black.opacity(0.55), radius: 4, y: 2)
+    }
+
+    @ViewBuilder
+    private func buzzSection(emoji: String, title: String, buzzes: [Buzz]) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                FlyView(category: category, size: 22, wingsBeating: false)
-                    .frame(width: 38, height: 32)
-                Text(title)
-                    .font(WallFont.stencil(22))
-                    .foregroundStyle(WallTheme.paper)
-                    .shadow(color: .black.opacity(0.55), radius: 4, y: 2)
-                Spacer()
-                Button {
+            sectionHeader(emoji, title)
+            ForEach(buzzes) { buzz in
+                BuzzRow(buzz: buzz) {
                     Haptics.tap()
-                    path.append(WallRoute.category(category))
-                } label: {
-                    Text("SEE ALL")
-                        .font(WallFont.stamp(11))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(WallTheme.ink.opacity(0.7)))
+                    path.append(WallRoute.buzz(buzz.id))
                 }
-                .buttonStyle(PressableButtonStyle())
+                .padding(.vertical, 3)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func flySection(emoji: String, title: String, flies: [FlyProfile]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader(emoji, title)
+            ForEach(flies) { fly in
+                FlyRow(fly: fly) {
+                    Haptics.tap()
+                    path.append(WallRoute.hive(fly.id))
+                }
+                .padding(.vertical, 3)
+            }
+        }
+    }
+
+    private var browseSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("🏷️", "BROWSE CATEGORIES")
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), alignment: .leading)], alignment: .leading, spacing: 8) {
+                ForEach(BuzzCategory.allCases) { category in
+                    browseChip(category)
+                }
             }
 
-            ForEach(flies) { fly in
+            if let browseCategory {
+                if browseBuzzes.isEmpty {
+                    TapedPaper(rotation: 0.8, padding: 13) {
+                        Text("Nothing buzzing in \(browseCategory.title) yet.")
+                            .font(WallFont.marker(13, weight: .regular))
+                            .foregroundStyle(WallTheme.inkSoft)
+                    }
+                } else {
+                    VStack(spacing: 4) {
+                        ForEach(browseBuzzes) { buzz in
+                            BuzzRow(buzz: buzz) {
+                                Haptics.tap()
+                                path.append(WallRoute.buzz(buzz.id))
+                            }
+                            .padding(.vertical, 3)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func browseChip(_ category: BuzzCategory) -> some View {
+        let isActive = browseCategory == category
+        return Button {
+            Haptics.tap()
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                browseCategory = isActive ? nil : category
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(category.emoji).font(.system(size: 12))
+                Text(category.title)
+                    .font(WallFont.stamp(10))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(isActive ? category.tint : WallTheme.paper.opacity(0.9))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(WallTheme.inkSoft.opacity(isActive ? 0.8 : 0.4), lineWidth: 1.2)
+                    )
+            )
+        }
+        .buttonStyle(PressableButtonStyle(scale: 0.93))
+        .accessibilityLabel("Browse \(category.title)")
+        .accessibilityAddTraits(isActive ? [.isSelected] : [])
+    }
+
+    private var swarmsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeader("🪰🪰", "ACTIVE SWARMS")
+
+            ForEach(store.swarms) { swarm in
                 Button {
                     Haptics.tap()
-                    path.append(WallRoute.story(fly.id))
+                    path.append(WallRoute.swarm(swarm.id))
                 } label: {
-                    TapedPaper(rotation: Double(abs(fly.id.hashValue % 3)) - 1.0, padding: 14) {
-                        HStack(spacing: 12) {
-                            FlyView(category: fly.category, size: 24, wingsBeating: false)
-                                .frame(width: 42, height: 36)
+                    TapedPaper(rotation: Double(abs(swarm.id.hashValue % 3)) - 1.0, padding: 14) {
+                        HStack(spacing: 11) {
+                            Image(systemName: "circle.hexagongrid.fill")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundStyle(FlyStatus.connected.tint)
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(fly.text)
-                                    .font(WallFont.marker(14, weight: .regular))
+                                Text(swarm.title)
+                                    .font(WallFont.stencil(17))
                                     .foregroundStyle(WallTheme.ink)
+                                Text("\(store.flyCount(for: swarm)) FLIES · \(swarm.buzzCount) BUZZES · \(swarm.teaser)")
+                                    .font(WallFont.marker(12, weight: .regular))
+                                    .foregroundStyle(WallTheme.inkSoft)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
-                                Text("😂 \(fly.reactionCount)  ·  👀 \(fly.witnessCount)")
-                                    .font(WallFont.stamp(11))
-                                    .foregroundStyle(WallTheme.inkSoft)
                             }
                             Spacer(minLength: 0)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .black))
+                                .foregroundStyle(WallTheme.inkSoft.opacity(0.6))
                         }
                     }
                 }

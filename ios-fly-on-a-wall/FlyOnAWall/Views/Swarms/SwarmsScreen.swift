@@ -2,7 +2,7 @@
 //  SwarmsScreen.swift
 //  FlyOnAWall
 //
-//  THE SWARMS — clusters of flies circling one event.
+//  THE SWARMS — Flies circling the same developing story or topic.
 //
 
 import SwiftUI
@@ -19,7 +19,7 @@ struct SwarmsScreen: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 3) {
                         StencilTitle(text: "THE SWARMS", size: 42)
-                        Text("When too many flies circle the same night.")
+                        Text("When too many Flies circle the same story.")
                             .font(WallFont.marker(15))
                             .foregroundStyle(WallTheme.ink.opacity(0.85))
                             .shadow(color: WallTheme.bone.opacity(0.5), radius: 0, x: 1, y: 1)
@@ -42,13 +42,17 @@ struct SwarmsScreen: View {
     }
 }
 
-/// A swarm shown as a live cluster of flies on a scrap of wall, not a feed card.
+/// A swarm shown as a live cluster of blogger flies on a scrap of wall, not a feed card.
 struct SwarmClusterCard: View {
     let swarm: Swarm
     let action: () -> Void
 
     @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var participants: [FlyProfile] {
+        store.flyAuthors(for: swarm)
+    }
 
     var body: some View {
         Button(action: action) {
@@ -66,16 +70,17 @@ struct SwarmClusterCard: View {
 
                     GeometryReader { proxy in
                         let field = CGRect(origin: .zero, size: proxy.size).insetBy(dx: 22, dy: 16)
-                        ForEach(Array(swarm.categories.prefix(8).enumerated()), id: \.offset) { index, category in
-                            let point = clusterPoint(index: index, count: min(swarm.categories.count, 8), field: field)
+                        let count = participants.count
+                        ForEach(Array(participants.prefix(8).enumerated()), id: \.element.id) { index, fly in
+                            let point = clusterPoint(index: index, count: min(count, 8), field: field)
                             BuzzingFly(
-                                category: category,
+                                status: fly.currentStatus,
                                 home: point,
                                 bounds: field,
                                 size: 24,
                                 partner: CGPoint(x: field.midX, y: field.midY),
-                                seed: UInt64(abs(swarm.id.hashValue % 9000) + index * 31),
-                                accessibilityTitle: "\(category.title) fly in \(swarm.title)"
+                                seed: UInt64(abs(fly.id.hashValue % 9000) &+ index &* 31),
+                                accessibilityTitle: "\(fly.username) in \(swarm.title)"
                             ) {
                                 action()
                             }
@@ -99,7 +104,7 @@ struct SwarmClusterCard: View {
                     HStack(spacing: 6) {
                         Image(systemName: "ant.fill")
                             .font(.system(size: 11, weight: .bold))
-                        Text("\(swarm.flyCount) CONNECTED FLIES")
+                        Text("\(store.flyCount(for: swarm)) FLIES · \(swarm.buzzCount) BUZZES")
                             .font(WallFont.stamp(11))
                     }
                     .foregroundStyle(.white)
@@ -120,7 +125,7 @@ struct SwarmClusterCard: View {
         }
         .buttonStyle(PressableButtonStyle(scale: 0.98))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(swarm.title). \(swarm.flyCount) connected flies. \(swarm.teaser)")
+        .accessibilityLabel("\(swarm.title). \(store.flyCount(for: swarm)) flies, \(swarm.buzzCount) buzzes. \(swarm.teaser)")
     }
 
     /// "3 STRONG · 1 POSSIBLE" — hidden entirely when nothing overlaps.
@@ -130,7 +135,7 @@ struct SwarmClusterCard: View {
         if stats.strong + stats.possible + stats.weak > 0 {
             Text("\(stats.strong) STRONG · \(stats.possible) POSSIBLE · \(stats.weak) WEAK")
                 .font(WallFont.stamp(10))
-                .foregroundStyle(FlyCategory.connected.tint)
+                .foregroundStyle(FlyStatus.connected.tint)
                 .padding(.top, 4)
         }
     }

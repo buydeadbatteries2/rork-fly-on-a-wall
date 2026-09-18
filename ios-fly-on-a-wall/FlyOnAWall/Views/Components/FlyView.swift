@@ -7,10 +7,11 @@
 
 import SwiftUI
 
-/// A single robotic fly rendered from vector parts so every category can differ
-/// by colour, wing silhouette, stamped symbol and glow.
+/// A single robotic fly rendered from vector parts so every status can differ
+/// by colour, wing silhouette, stamped symbol and glow. The colour reflects
+/// the Fly's CURRENT BUZZ STATUS, not its identity.
 struct FlyView: View {
-    let category: FlyCategory
+    let status: FlyStatus
     var size: CGFloat = 34
     var wingsBeating: Bool = true
     var isEmphasized: Bool = false
@@ -35,7 +36,7 @@ struct FlyView: View {
 
     private func startAnimations() {
         if wingsBeating && !reduceMotion {
-            let beat: Double = category.motion.wingBeat
+            let beat: Double = status.motion.wingBeat
             withAnimation(.easeInOut(duration: beat).repeatForever(autoreverses: true)) {
                 flap = true
             }
@@ -50,11 +51,11 @@ struct FlyView: View {
 
     @ViewBuilder
     private var haloLayer: some View {
-        if category.motion.pulses || isEmphasized {
+        if status.motion.pulses || isEmphasized {
             let diameter: CGFloat = size * 2.0
             let strength: Double = isEmphasized ? 0.55 : 0.34
             let gradient = RadialGradient(
-                colors: [category.glow.opacity(strength), Color.clear],
+                colors: [status.glow.opacity(strength), Color.clear],
                 center: .center,
                 startRadius: 0,
                 endRadius: size * 0.95
@@ -84,9 +85,9 @@ struct FlyView: View {
         .scaleEffect(y: flap ? 0.62 : 1.0, anchor: .bottom)
     }
 
-    /// Width and height of one wing for the category's silhouette.
+    /// Width and height of one wing for the status's silhouette.
     private var wingSize: CGSize {
-        switch category.wing {
+        switch status.wing {
         case .round: CGSize(width: size * 0.52, height: size * 0.40)
         case .jagged: CGSize(width: size * 0.56, height: size * 0.30)
         case .narrow: CGSize(width: size * 0.44, height: size * 0.24)
@@ -101,7 +102,7 @@ struct FlyView: View {
         let w: CGFloat = dimensions.width
         let h: CGFloat = dimensions.height
         let membrane = LinearGradient(
-            colors: [Color.white.opacity(0.78), category.glow.opacity(0.32)],
+            colors: [Color.white.opacity(0.78), status.glow.opacity(0.32)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -123,7 +124,7 @@ struct FlyView: View {
     /// Extra non-colour cue drawn on top of the wing membrane.
     @ViewBuilder
     private func wingDetail(w: CGFloat, h: CGFloat) -> some View {
-        switch category.wing {
+        switch status.wing {
         case .double:
             Ellipse()
                 .fill(Color.white.opacity(0.45))
@@ -135,7 +136,7 @@ struct FlyView: View {
                 .frame(width: w, height: h)
         case .jagged:
             JaggedVein()
-                .stroke(category.tint.opacity(0.75), lineWidth: max(0.7, size * 0.025))
+                .stroke(status.tint.opacity(0.75), lineWidth: max(0.7, size * 0.025))
                 .frame(width: w, height: h)
         default:
             EmptyView()
@@ -154,8 +155,8 @@ struct FlyView: View {
     private var abdomen: some View {
         let shell = LinearGradient(
             colors: [
-                category.tint.opacity(0.95),
-                category.tint.opacity(0.55),
+                status.tint.opacity(0.95),
+                status.tint.opacity(0.55),
                 WallTheme.ink.opacity(0.85)
             ],
             startPoint: .topLeading,
@@ -173,7 +174,7 @@ struct FlyView: View {
                 Ellipse().stroke(WallTheme.ink.opacity(0.7), lineWidth: outlineWidth)
             }
             .overlay {
-                Image(systemName: category.symbol)
+                Image(systemName: status.symbol)
                     .font(.system(size: symbolSize, weight: .black))
                     .foregroundStyle(plateSymbolColor)
                     .offset(y: bodyHeight * 0.08)
@@ -211,7 +212,7 @@ struct FlyView: View {
         let glowRadius: CGFloat = size * 0.10
 
         return Circle()
-            .fill(category.glow)
+            .fill(status.glow)
             .frame(width: eyeSize, height: eyeSize)
             .overlay {
                 Circle()
@@ -219,11 +220,11 @@ struct FlyView: View {
                     .frame(width: glintSize, height: glintSize)
                     .offset(x: -glintOffset, y: -glintOffset)
             }
-            .shadow(color: category.glow.opacity(0.9), radius: glowRadius)
+            .shadow(color: status.glow.opacity(0.9), radius: glowRadius)
     }
 
     private var plateSymbolColor: Color {
-        switch category {
+        switch status {
         case .strongConnection, .inQuestion: WallTheme.ink.opacity(0.8)
         default: Color.white.opacity(0.9)
         }
@@ -288,13 +289,13 @@ private struct JaggedVein: Shape {
         WallTheme.bone
         VStack(spacing: 24) {
             HStack(spacing: 18) {
-                ForEach(FlyCategory.allCases.prefix(4)) { category in
-                    FlyView(category: category, size: 40)
+                ForEach(FlyStatus.allCases.prefix(4)) { status in
+                    FlyView(status: status, size: 40)
                 }
             }
             HStack(spacing: 18) {
-                ForEach(FlyCategory.allCases.suffix(4)) { category in
-                    FlyView(category: category, size: 40)
+                ForEach(FlyStatus.allCases.suffix(4)) { status in
+                    FlyView(status: status, size: 40)
                 }
             }
         }

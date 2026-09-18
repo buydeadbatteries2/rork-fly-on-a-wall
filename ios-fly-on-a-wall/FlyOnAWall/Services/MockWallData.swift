@@ -2,60 +2,168 @@
 //  MockWallData.swift
 //  FlyOnAWall
 //
-//  Local sample content for Phase 1. Swap this out for a real service later
-//  without touching the views.
+//  Local sample content for the blogger platform: fictional FlyProfiles,
+//  their Buzzes, Buzz Backs, Swarms and Connections. Swap this out for a real
+//  service later without touching the views. All names are fictional.
 //
 
 import Foundation
 
-/// Static sample confessions, swarms and connections.
+/// Static sample bloggers, buzzes, swarms and connections.
 enum MockWallData {
-    static let stories: [StoryFly] = buildStories()
+    static let profiles: [FlyProfile] = buildProfiles()
+    static let buzzes: [Buzz] = buildBuzzes()
+    static let buzzBacks: [BuzzBack] = buildBuzzBacks()
     static let swarms: [Swarm] = buildSwarms()
     static let connections: [FlyConnection] = buildConnections()
 
-    static func stories(in category: FlyCategory) -> [StoryFly] {
-        stories.filter { $0.category == category }
+    static func buzzes(in category: BuzzCategory) -> [Buzz] {
+        buzzes.filter { $0.category == category }
     }
 
     private static func date(hoursAgo: Double) -> Date {
         Date(timeIntervalSinceNow: -hoursAgo * 3600)
     }
 
-    private static func buildStories() -> [StoryFly] {
-        var flies: [StoryFly] = []
+    /// Stable checksum so mock assignments don't shuffle between launches.
+    private static func checksum(_ string: String) -> Int {
+        string.unicodeScalars.reduce(0) { $0 &+ Int($1.value) }
+    }
+
+    // MARK: - Bloggers
+
+    private static func buildProfiles() -> [FlyProfile] {
+        func profile(
+            _ id: String,
+            _ username: String,
+            _ displayName: String,
+            _ tagline: String,
+            followers: Int,
+            score: Int,
+            buzzes: Int,
+            interests: [BuzzCategory],
+            status: FlyStatus,
+            joinedDaysAgo: Double
+        ) -> FlyProfile {
+            FlyProfile(
+                id: id,
+                username: username,
+                displayName: displayName,
+                tagline: tagline,
+                buzzScore: score,
+                followerCount: followers,
+                followingCount: Int(followers / 37 + 3),
+                buzzCount: buzzes,
+                interests: interests,
+                currentStatus: status,
+                joinedAt: date(hoursAgo: joinedDaysAgo * 24)
+            )
+        }
+
+        return [
+            profile("fly-messyjessy", "@MessyJessy", "Jessy", "Mind your business. I don't.",
+                    followers: 14_820, score: 18_420, buzzes: 238, interests: [.relationships, .embarrassing], status: .hot, joinedDaysAgo: 410),
+            profile("fly-officefly", "@OfficeFly", "The Office Fly", "HR blocked me twice. I post anyway.",
+                    followers: 9_310, score: 11_050, buzzes: 187, interests: [.workplace, .internet], status: .connected, joinedDaysAgo: 365),
+            profile("fly-auntie", "@AuntieKnows", "Auntie", "I heard it from somebody who heard it from everybody.",
+                    followers: 22_150, score: 26_880, buzzes: 412, interests: [.celebrity, .relationships, .hotBuzz], status: .iWasThere, joinedDaysAgo: 620),
+            profile("fly-parkingpapi", "@ParkingLotPapi", "Papi", "Every lot has a legend. I am that legend.",
+                    followers: 5_240, score: 6_130, buzzes: 96, interests: [.sports, .localBuzz], status: .local, joinedDaysAgo: 220),
+            profile("fly-tealady", "@TeaLady44", "Tea Lady", "Steeped. Spilled. Repeat.",
+                    followers: 30_120, score: 34_560, buzzes: 508, interests: [.celebrity, .hotBuzz], status: .hot, joinedDaysAgo: 700),
+            profile("fly-buzzkill", "@BuzzKill", "BuzzKill", "Fact-checking your group chat since forever.",
+                    followers: 4_180, score: 5_020, buzzes: 143, interests: [.workplace, .wtf], status: .inQuestion, joinedDaysAgo: 300),
+            profile("fly-nosey", "@NoseyNeighbor", "The Neighbor", "My curtains are open for a reason.",
+                    followers: 11_730, score: 13_940, buzzes: 221, interests: [.localBuzz, .relationships], status: .local, joinedDaysAgo: 540),
+            profile("fly-backrow", "@BackRowFly", "Back Row", "I hear everything from the back.",
+                    followers: 7_660, score: 8_410, buzzes: 164, interests: [.music, .internet], status: .new, joinedDaysAgo: 95),
+            profile("fly-gremlin", "@GossipGremlin", "The Gremlin", "Fed on drama. Thriving.",
+                    followers: 13_240, score: 15_780, buzzes: 289, interests: [.wtf, .hotBuzz, .embarrassing], status: .connected, joinedDaysAgo: 480),
+            profile("fly-stadium", "@StadiumStinger", "Stinger", "Section 12, row 3, always loud.",
+                    followers: 18_990, score: 21_340, buzzes: 176, interests: [.sports, .hotBuzz], status: .strongConnection, joinedDaysAgo: 390),
+            profile("fly-karaoke", "@KaraokeKrash", "Krash", "The mic is a lifestyle.",
+                    followers: 3_910, score: 4_270, buzzes: 121, interests: [.music, .embarrassing], status: .oldBuzz, joinedDaysAgo: 260),
+            profile("fly-cube417", "@Cube417", "Cube 417", "Corporate life is a documentary and I have clips.",
+                    followers: 6_820, score: 7_990, buzzes: 204, interests: [.workplace, .embarrassing], status: .connected, joinedDaysAgo: 340),
+            profile("fly-lurker", "@LateNightLurker", "The Lurker", "Asleep during the day. Aware at 3am.",
+                    followers: 9_580, score: 10_660, buzzes: 267, interests: [.internet, .wtf], status: .new, joinedDaysAgo: 60),
+            profile("fly-tinfoil", "@TinFoilTina", "Tina", "I connect dots you didn't know existed.",
+                    followers: 15_660, score: 19_120, buzzes: 342, interests: [.wtf, .celebrity], status: .strongConnection, joinedDaysAgo: 575),
+            profile("fly-barflies", "@BarfliesOnly", "Barflies", "What happens at happy hour gets posted.",
+                    followers: 10_240, score: 12_380, buzzes: 198, interests: [.relationships, .music], status: .oldBuzz, joinedDaysAgo: 450),
+
+            FlyProfile(
+                id: "fly-me",
+                username: "@JustLanded",
+                displayName: "You",
+                tagline: "New here. Already know too much.",
+                buzzScore: 12,
+                followerCount: 3,
+                followingCount: 0,
+                buzzCount: 0,
+                interests: [],
+                currentStatus: .new,
+                joinedAt: .now,
+                isMe: true
+            )
+        ]
+    }
+
+    /// Picks an eligible blogger for a buzz: deterministic, constrained by the
+    /// bloggers' interests so each Fly keeps a consistent personality.
+    private static func authorID(for buzzID: String, category: BuzzCategory) -> FlyProfile {
+        let eligible = profiles.filter { !$0.isMe && $0.interests.contains(category) }
+        guard !eligible.isEmpty else { return profiles[0] }
+        return eligible[abs(checksum(buzzID) % eligible.count)]
+    }
+
+    // MARK: - Buzzes (all ~75 original confessions, migrated)
+
+    private static func buildBuzzes() -> [Buzz] {
+        var posts: [(buzz: Buzz, legacy: FlyStatus)] = []
         var counter = 2100
 
         func add(
             _ text: String,
-            _ category: FlyCategory,
+            _ legacy: FlyStatus,
             hoursAgo: Double,
             reactions: Int,
             witnesses: Int = 0,
             connections: Int = 0,
             area: String? = nil,
             swarm: String? = nil,
-            strength: Double = 0
+            strength: Double = 0,
+            explicitCategory: BuzzCategory? = nil
         ) {
             counter += 7
-            flies.append(
-                StoryFly(
-                    id: "fly-\(counter)",
-                    handle: "Fly #\(counter)",
-                    text: text,
-                    category: category,
-                    postedAt: date(hoursAgo: hoursAgo),
-                    reactionCount: reactions,
-                    witnessCount: witnesses,
-                    connectedFlyCount: connections,
-                    area: area,
-                    swarmID: swarm,
-                    connectionStrength: strength
+            let id = "buzz-\(counter)"
+            let category = explicitCategory ?? buzzCategory(for: text, legacy: legacy, area: area)
+            let author = authorID(for: id, category: category)
+            posts.append(
+                (
+                    Buzz(
+                        id: id,
+                        authorID: author.id,
+                        authorUsername: author.username,
+                        text: text,
+                        category: category,
+                        tags: tags(for: category, id: id),
+                        postedAt: date(hoursAgo: hoursAgo),
+                        reactionCount: reactions,
+                        buzzBackCount: 2 + checksum(id) % 3,
+                        iWasThereCount: witnesses,
+                        viewCount: reactions * 12 + 347,
+                        connectionCount: connections,
+                        area: area,
+                        swarmID: swarm,
+                        connectionStrength: strength
+                    ),
+                    legacy
                 )
             )
         }
 
-        // NEW
+        // Legacy NEW — personal, fresh, cringe-adjacent.
         add("I have been pretending my microwave is broken for four months so my roommate stops heating fish.", .new, hoursAgo: 0.4, reactions: 61)
         add("I waved back at someone who was waving at the person behind me, so I committed and hugged them.", .new, hoursAgo: 0.9, reactions: 128, witnesses: 2)
         add("My cat knocked my laptop off the desk mid-interview and I blamed an earthquake. There was no earthquake.", .new, hoursAgo: 1.4, reactions: 204)
@@ -67,7 +175,7 @@ enum MockWallData {
         add("I put a fake plant in my office and watered it for a month because I did not want to admit it was fake.", .new, hoursAgo: 6.5, reactions: 210)
         add("I got a haircut I hate and I have been wearing a beanie indoors like it is a personality.", .new, hoursAgo: 7.4, reactions: 66)
 
-        // HOT
+        // Legacy HOT — the wall's loudest right now.
         add("A pigeon walked into our office, sat in the CEO's chair, and the meeting continued for eleven minutes.", .hot, hoursAgo: 3.0, reactions: 1840, witnesses: 6, connections: 2, swarm: "swarm-office", strength: 0.6)
         add("Someone microwaved salmon at the company all-hands. The fire alarm went off. HR sent three emails.", .hot, hoursAgo: 5.0, reactions: 1502, witnesses: 4, connections: 3, swarm: "swarm-office", strength: 0.7)
         add("The wedding DJ played the wrong first-dance song and the groom just danced to it anyway. Beautifully.", .hot, hoursAgo: 8.0, reactions: 2310, witnesses: 5, connections: 4, swarm: "swarm-wedding", strength: 0.8)
@@ -79,7 +187,7 @@ enum MockWallData {
         add("The escalator broke and everyone just stood there for a second like it was a personal betrayal.", .hot, hoursAgo: 18.0, reactions: 880)
         add("My dentist hummed the entire time. I now associate root canals with smooth jazz.", .hot, hoursAgo: 20.0, reactions: 1190)
 
-        // LOCAL
+        // Legacy LOCAL — broad-area content, never precise.
         add("There is a man on the corner who reviews everyone's dogs out loud. Mine got a seven. Fair.", .local, hoursAgo: 2.0, reactions: 430, area: "Downtown", swarm: nil)
         add("The taco truck near the train stop has a secret menu and the password is just saying please twice.", .local, hoursAgo: 4.5, reactions: 612, witnesses: 4, area: "East Side")
         add("Somebody keeps leaving tiny painted rocks on the bus stop bench. I have nine. I need more.", .local, hoursAgo: 6.0, reactions: 388, area: "North Line")
@@ -90,7 +198,7 @@ enum MockWallData {
         add("The bakery sells a pastry with no name. You just point. It is the best thing in this city.", .local, hoursAgo: 15.0, reactions: 730, area: "Old Quarter")
         add("Every Thursday a brass band plays badly in the park and we have all agreed it is essential.", .local, hoursAgo: 19.0, reactions: 402, witnesses: 3, area: "Riverside")
 
-        // IN QUESTION
+        // Legacy IN QUESTION — details being disputed.
         add("Three separate people told me they organized the surprise party. It was one party. Somebody is lying.", .inQuestion, hoursAgo: 4.0, reactions: 560, witnesses: 3, connections: 2, strength: 0.5)
         add("My coworker claims he ran a marathon on Sunday. His step count says 402. I have questions.", .inQuestion, hoursAgo: 6.0, reactions: 720, witnesses: 2)
         add("Somebody ate my labelled lunch and then complained the office food was bad. Same lunch. Same day.", .inQuestion, hoursAgo: 8.0, reactions: 980, witnesses: 4, connections: 1, swarm: "swarm-office", strength: 0.4)
@@ -101,7 +209,7 @@ enum MockWallData {
         add("Someone returned the office stapler with a note apologizing. We never reported a missing stapler.", .inQuestion, hoursAgo: 21.0, reactions: 510, witnesses: 2, swarm: "swarm-office")
         add("My neighbor claims his car alarm only goes off during earthquakes. It went off eleven times today.", .inQuestion, hoursAgo: 26.0, reactions: 380)
 
-        // CONNECTED
+        // Legacy CONNECTED — other sides of known stories.
         add("I was the caterer at that wedding. The cake did not fall. It was pushed. By a child. Strategically.", .connected, hoursAgo: 7.0, reactions: 1610, witnesses: 5, connections: 4, swarm: "swarm-wedding", strength: 0.85)
         add("I sat two tables away from the couple arguing about the honeymoon budget. I have notes.", .connected, hoursAgo: 9.0, reactions: 890, witnesses: 3, connections: 3, swarm: "swarm-wedding", strength: 0.7)
         add("The office pigeon situation escalated. There is now a second pigeon. They appear organized.", .connected, hoursAgo: 11.0, reactions: 1340, witnesses: 4, connections: 3, swarm: "swarm-office", strength: 0.65)
@@ -111,7 +219,7 @@ enum MockWallData {
         add("Same building, different floor. Somebody has been leaving passive-aggressive elevator notes for a year.", .connected, hoursAgo: 25.0, reactions: 640, connections: 2, swarm: "swarm-office", strength: 0.45)
         add("I was the photographer. I have a picture of the exact moment the bouquet argument started.", .connected, hoursAgo: 30.0, reactions: 1720, witnesses: 5, connections: 4, swarm: "swarm-wedding", strength: 0.9)
 
-        // I WAS THERE
+        // Legacy I WAS THERE — direct involvement claimed.
         add("I told everybody I was working late. I was actually sitting in my car eating wings because I needed some peace.", .iWasThere, hoursAgo: 3.0, reactions: 42, witnesses: 8, connections: 2, strength: 0.5)
         add("I watched a man argue with a vending machine and then win. It gave him two bags. I applauded.", .iWasThere, hoursAgo: 4.5, reactions: 1260, witnesses: 5)
         add("I saw the whole thing at the wedding. She did not trip. She lunged. For the cake. And she got it.", .iWasThere, hoursAgo: 6.0, reactions: 2410, witnesses: 9, connections: 4, swarm: "swarm-wedding", strength: 0.8)
@@ -123,7 +231,7 @@ enum MockWallData {
         add("I was their waiter on that date. They ordered one appetizer and stared at it like it owed them money.", .iWasThere, hoursAgo: 23.0, reactions: 1670, witnesses: 5, connections: 3, swarm: "swarm-date", strength: 0.75)
         add("I was walking by when the raccoon sandwich thing happened. It was premeditated. That raccoon waited.", .iWasThere, hoursAgo: 27.0, reactions: 2020, witnesses: 6)
 
-        // STRONG CONNECTION
+        // Legacy STRONG CONNECTION — overlapping accounts.
         add("Four separate flies have now described the same burnt-sugar smell in the same building on the same night.", .strongConnection, hoursAgo: 9.0, reactions: 2140, witnesses: 9, connections: 6, strength: 0.95)
         add("The cake, the bouquet, and the DJ story all happened at one wedding. Six people are telling on each other.", .strongConnection, hoursAgo: 13.0, reactions: 2760, witnesses: 11, connections: 7, swarm: "swarm-wedding", strength: 0.98)
         add("Everyone who worked that Thursday shift has now confessed something about the walk-in freezer.", .strongConnection, hoursAgo: 16.0, reactions: 1480, witnesses: 7, connections: 5, strength: 0.88)
@@ -133,7 +241,7 @@ enum MockWallData {
         add("Five flies, one karaoke bar, one unforgivable rendition of a power ballad. The accounts match.", .strongConnection, hoursAgo: 33.0, reactions: 1610, witnesses: 7, connections: 5, strength: 0.85)
         add("The tiny painted rocks have been spotted in four neighborhoods. Somebody is running an operation.", .strongConnection, hoursAgo: 40.0, reactions: 990, witnesses: 5, connections: 4, strength: 0.78)
 
-        // OLD BUZZ
+        // Legacy OLD BUZZ — resurfaced classics.
         add("Two years ago I hid a co-worker's chair. It is still hidden. Somebody found it this week.", .oldBuzz, hoursAgo: 96, reactions: 2180, witnesses: 6, connections: 2, swarm: "swarm-office", strength: 0.5)
         add("The legendary office potluck incident of three winters ago has resurfaced and people are angry again.", .oldBuzz, hoursAgo: 120, reactions: 1740, witnesses: 8, connections: 3, swarm: "swarm-office", strength: 0.6)
         add("Somebody finally admitted to the great mystery casserole. It was the intern. It was always the intern.", .oldBuzz, hoursAgo: 150, reactions: 2560, witnesses: 9)
@@ -143,10 +251,131 @@ enum MockWallData {
         add("The disaster date from last year has a sequel. They matched again. Neither remembered.", .oldBuzz, hoursAgo: 310, reactions: 3480, witnesses: 6, connections: 3, swarm: "swarm-date", strength: 0.65)
         add("Someone dug up the old parking spot spreadsheet. It is now community property. Chaos followed.", .oldBuzz, hoursAgo: 400, reactions: 1360, witnesses: 3)
 
-        return flies
+        // A few CELEBRITY and SPORTS posts so every category has content.
+        add("A boy-band reunion is happening in a parking garage downtown and only the valets know.", .hot, hoursAgo: 5.5, reactions: 2620, witnesses: 3, explicitCategory: .celebrity)
+        add("Famous DJ was spotted buying forty cucumbers at the corner market. His trainer says it is for a ritual.", .hot, hoursAgo: 9.5, reactions: 1420, witnesses: 2, explicitCategory: .celebrity)
+        add("That reality star's 'surprise' proposal was rehearsed four times. I know because I held the cue cards.", .hot, hoursAgo: 14.0, reactions: 1880, witnesses: 4, explicitCategory: .celebrity)
+        add("The mascot got into a shoving match with the referee's nephew. Security pretended to be plants.", .hot, hoursAgo: 7.0, reactions: 990, witnesses: 5, explicitCategory: .sports)
+
+        return posts.map(\.buzz)
     }
 
-    /// Predefined connections between existing mock flies, so the Connection
+    /// Maps the legacy status of each migrated confession to a content
+    /// category, using keywords first so topics land where they belong.
+    private static func buzzCategory(for text: String, legacy: FlyStatus, area: String?) -> BuzzCategory {
+        if legacy == .hot { return .hotBuzz }
+        if legacy == .local || area != nil { return .localBuzz }
+
+        let lowered = text.lowercased()
+        let rules: [(BuzzCategory, [String])] = [
+            (.workplace, ["office", "coworker", "co-worker", "manager", "meeting", "stapler", "all-hands", "hr", "shift", "intern", "walk-in", "ceo", "desk", "elevator", "potluck", "casserole", "lunch", "company", "building", "freezer"]),
+            (.relationships, ["date", "fianc", "wedding", "bouquet", "cake", "groom", "honeymoon", "married", "matched", "brother", "party", "couple"]),
+            (.music, ["karaoke", "playlist", "hummed", "jazz", "brass band", "harmonica", "ballad", "dj"]),
+            (.sports, ["gym", "marathon", "step count", "grunts"]),
+            (.internet, ["group chat", "posted", "spreadsheet", "googly", "email", "camera"]),
+            (.wtf, ["raccoon", "pigeon", "rooster", "vending", "whale", "hopscotch", "painted rocks", "escalator", "alarm", "earthquake", "rocks"]),
+            (.embarrassing, ["haircut", "beanie", "sneezed", "barista", "waved", "hugged", "microwave", "chad", "book club", "plant", "shower", "interview", "chair", "wings", "soup"]),
+            (.celebrity, ["famous", "celebrity", "reality star", "tour"])
+        ]
+        for (category, keywords) in rules where keywords.contains(where: lowered.contains) {
+            return category
+        }
+
+        switch legacy {
+        case .new: return .embarrassing
+        case .inQuestion: return .wtf
+        case .iWasThere: return .embarrassing
+        case .connected, .strongConnection: return .relationships
+        case .oldBuzz: return .workplace
+        default: return .embarrassing
+        }
+    }
+
+    /// Two deterministic tags per buzz, drawn from the category's suggestions.
+    private static func tags(for category: BuzzCategory, id: String) -> [String] {
+        let pool = category.suggestedTags
+        let first = checksum(id) % pool.count
+        let second = (checksum(id) / 7 + 1) % pool.count
+        return first == second ? [pool[first]] : [pool[first], pool[second]]
+    }
+
+    // MARK: - Buzz Backs
+
+    private static let replyPool: [String] = [
+        "I need the rest of this story immediately.",
+        "There is no way this is real. Please say it is real.",
+        "I was there and I can confirm it was worse.",
+        "This is the best thing I have read all week.",
+        "The way I just gasped in a quiet office.",
+        "Somebody check on the other person in this story.",
+        "I have questions and none of them are calm.",
+        "Screenshotting this for the group chat.",
+        "You cannot just end the story there.",
+        "This is why I stay home.",
+        "I would pay to see the security footage.",
+        "Every word of this feels illegal.",
+        "Not me reading this instead of working.",
+        "The details line up and that is what scares me."
+    ]
+
+    /// Two to four mock replies per buzz, authored by other bloggers. The
+    /// per-buzz count matches `2 + checksum(id) % 3` used in buildBuzzes.
+    private static func buildBuzzBacks() -> [BuzzBack] {
+        var backs: [BuzzBack] = []
+        for buzz in buzzes {
+            let count = 2 + checksum(buzz.id) % 3
+            for index in 0..<count {
+                let candidates = profiles.filter { !$0.isMe && $0.id != buzz.authorID }
+                let author = candidates[abs((checksum(buzz.id) &+ index * 977) % candidates.count)]
+                let text = replyPool[(checksum(buzz.id) &+ index * 5) % replyPool.count]
+                let at = min(Date.now, buzz.postedAt.addingTimeInterval(TimeInterval(3600 * (0.6 + Double(index)))))
+                backs.append(
+                    BuzzBack(
+                        buzzID: buzz.id,
+                        authorID: author.id,
+                        authorUsername: author.username,
+                        text: text,
+                        createdAt: at
+                    )
+                )
+            }
+        }
+        return backs
+    }
+
+    // MARK: - Swarms
+
+    private static func buildSwarms() -> [Swarm] {
+        let grouped = Dictionary(grouping: buzzes.compactMap { buzz -> (String, Buzz)? in
+            guard let swarmID = buzz.swarmID else { return nil }
+            return (swarmID, buzz)
+        }, by: { $0.0 }).mapValues { $0.map(\.1) }
+
+        func swarm(_ id: String, _ title: String, _ teaser: String) -> Swarm {
+            let members = grouped[id] ?? []
+            var authorIDs: [String] = []
+            for buzz in members where !authorIDs.contains(buzz.authorID) {
+                authorIDs.append(buzz.authorID)
+            }
+            return Swarm(
+                id: id,
+                title: title,
+                teaser: teaser,
+                buzzIDs: members.map(\.id),
+                authorIDs: authorIDs
+            )
+        }
+
+        return [
+            swarm("swarm-wedding", "THE WEDDING DISASTER", "One cake. One bouquet. Far too many witnesses."),
+            swarm("swarm-office", "THE OFFICE SITUATION", "A pigeon, a salmon, and a stapler walk into a floor plan."),
+            swarm("swarm-date", "THE DATE FROM HELL", "Both sides of the table are on this wall. Neither knows.")
+        ]
+    }
+
+    // MARK: - Connections
+
+    /// Predefined connections between existing mock buzzes, so the Connection
     /// Board can be tested without creating everything by hand. Covers all
     /// three strengths, with several tied to existing swarms.
     private static func buildConnections() -> [FlyConnection] {
@@ -267,33 +496,9 @@ enum MockWallData {
         return links
     }
 
-    /// Looks up a mock fly ID by the start of its text. Keeps the connection
+    /// Looks up a mock buzz ID by the start of its text. Keeps the connection
     /// table readable without hard-coding generated counter IDs.
     private static func id(forTextPrefix prefix: String) -> String? {
-        stories.first { $0.text.hasPrefix(prefix) }?.id
-    }
-
-    private static func buildSwarms() -> [Swarm] {
-        let grouped = Dictionary(grouping: stories.compactMap { fly -> (String, StoryFly)? in
-            guard let swarmID = fly.swarmID else { return nil }
-            return (swarmID, fly)
-        }, by: { $0.0 }).mapValues { $0.map(\.1) }
-
-        func swarm(_ id: String, _ title: String, _ teaser: String) -> Swarm {
-            let flies = grouped[id] ?? []
-            return Swarm(
-                id: id,
-                title: title,
-                teaser: teaser,
-                storyIDs: flies.map(\.id),
-                categories: flies.map(\.category)
-            )
-        }
-
-        return [
-            swarm("swarm-wedding", "THE WEDDING DISASTER", "One cake. One bouquet. Far too many witnesses."),
-            swarm("swarm-office", "THE OFFICE SITUATION", "A pigeon, a salmon, and a stapler walk into a floor plan."),
-            swarm("swarm-date", "THE DATE FROM HELL", "Both sides of the table are on this wall. Neither knows.")
-        ]
+        buzzes.first { $0.text.hasPrefix(prefix) }?.id
     }
 }

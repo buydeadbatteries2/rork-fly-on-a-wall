@@ -18,16 +18,17 @@ struct FlyLegendSheet: View {
                 VStack(spacing: 16) {
                     VStack(spacing: 4) {
                         StencilTitle(text: "KNOW YOUR FLIES", size: 30)
-                        Text("Colour tells you what. Shape and speed tell you why.")
+                        Text("Colour shows what's happening around a Fly's Buzz right now. It is never the Fly's identity — Flies change colours as their Buzz changes.")
                             .font(WallFont.marker(13, weight: .medium))
                             .foregroundStyle(WallTheme.inkSoft)
                             .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(.top, 6)
 
                     VStack(spacing: 10) {
-                        ForEach(FlyCategory.allCases) { category in
-                            legendRow(category)
+                        ForEach(FlyStatus.allCases) { status in
+                            legendRow(status)
                         }
                     }
                     .padding(16)
@@ -68,16 +69,16 @@ struct FlyLegendSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func legendRow(_ category: FlyCategory) -> some View {
+    private func legendRow(_ status: FlyStatus) -> some View {
         HStack(spacing: 12) {
-            FlyView(category: category, size: 30, wingsBeating: false)
+            FlyView(status: status, size: 30, wingsBeating: false)
                 .frame(width: 50, height: 42)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(category.title)
+                Text(status.title)
                     .font(WallFont.stencil(17))
                     .foregroundStyle(WallTheme.ink)
-                Text(category.blurb)
+                Text(status.blurb)
                     .font(WallFont.marker(12, weight: .regular))
                     .foregroundStyle(WallTheme.inkSoft)
                     .fixedSize(horizontal: false, vertical: true)
@@ -85,13 +86,13 @@ struct FlyLegendSheet: View {
 
             Spacer(minLength: 4)
 
-            Text(category.motionNote)
+            Text(status.motionNote)
                 .font(WallFont.stamp(10))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 4)
                 .background(
-                    Capsule().fill(category == .strongConnection ? WallTheme.inkSoft : category.tint.opacity(0.9))
+                    Capsule().fill(status == .strongConnection ? WallTheme.inkSoft : status.tint.opacity(0.9))
                 )
                 .frame(maxWidth: 96, alignment: .trailing)
                 .multilineTextAlignment(.trailing)

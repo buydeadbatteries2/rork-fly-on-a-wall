@@ -30,7 +30,7 @@ struct ContentView: View {
                             .wallDestinations(path: $swarmPath)
                     }
                 case .post:
-                    PostAFlyScreen()
+                    PostABuzzScreen()
                 case .explore:
                     NavigationStack(path: $explorePath) {
                         ExploreScreen(path: $explorePath)
@@ -55,10 +55,10 @@ struct ContentView: View {
         .environment(store)
     }
 
-    /// Story detail owns the bottom edge, so the tab strip steps aside there.
+    /// Buzz detail owns the bottom edge, so the tab strip steps aside there.
     private var hidesTabBar: Bool {
         guard let top = activePath.last else { return false }
-        if case .story = top { return true }
+        if case .buzz = top { return true }
         return false
     }
 
@@ -79,14 +79,14 @@ private struct WallDestinations: ViewModifier {
     func body(content: Content) -> some View {
         content.navigationDestination(for: WallRoute.self) { route in
             switch route {
-            case .category(let category):
-                CategoryWallScreen(category: category, path: $path)
-            case .story(let id):
-                StoryDetailScreen(storyID: id, path: $path)
+            case .buzz(let id):
+                BuzzDetailScreen(buzzID: id, path: $path)
+            case .hive(let id):
+                HiveScreen(flyID: id, path: $path)
             case .swarm(let id):
                 SwarmDetailScreen(swarmID: id, path: $path)
             case .connectionBoard(let id):
-                ConnectionBoardScreen(storyID: id, path: $path)
+                ConnectionBoardScreen(buzzID: id, path: $path)
             }
         }
     }

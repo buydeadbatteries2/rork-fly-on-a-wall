@@ -2,16 +2,16 @@
 //  ConnectFlyFlow.swift
 //  FlyOnAWall
 //
-//  Propose that two flies may be talking about the same thing:
-//  pick a fly → say what the connection is → CHECK CONNECTION →
-//  local deterministic analysis → the two flies converge → reveal.
-//  Story similarity only. Never identification of people.
+//  Propose that two buzzes may be talking about the same thing:
+//  pick a buzz → say what the connection is → CHECK CONNECTION →
+//  local deterministic analysis → the two Flies' buzzes converge → reveal.
+//  Buzz similarity only. Never identification of people.
 //
 
 import SwiftUI
 
 struct ConnectFlyFlow: View {
-    let focusStoryID: String
+    let focusBuzzID: String
     @Binding var path: [WallRoute]
 
     @Environment(WallStore.self) private var store
@@ -28,34 +28,31 @@ struct ConnectFlyFlow: View {
 
     @State private var step: Step = .pick
     @State private var search: String = ""
-    @State private var filter: FlyCategory?
+    @State private var filter: BuzzCategory?
     @State private var targetID: String?
     @State private var selectedClues: Set<ConnectionClue> = []
     @State private var notice: String = ""
     @State private var resultLink: FlyConnection?
     @State private var converged: Bool = false
 
-    /// Categories offered on the picker, in the brief's order.
-    private let filters: [FlyCategory] = [.new, .hot, .local, .inQuestion, .iWasThere, .oldBuzz]
+    private var focus: Buzz? { store.buzz(id: focusBuzzID) }
+    private var target: Buzz? { targetID.flatMap { store.buzz(id: $0) } }
 
-    private var focus: StoryFly? { store.story(id: focusStoryID) }
-    private var target: StoryFly? { targetID.flatMap { store.story(id: $0) } }
-
-    private var candidates: [StoryFly] {
-        store.stories
-            .filter { $0.id != focusStoryID }
-            .filter { fly in filter.map({ fly.category == $0 }) ?? true }
-            .filter { fly in
+    private var candidates: [Buzz] {
+        store.buzzes
+            .filter { $0.id != focusBuzzID }
+            .filter { buzz in filter.map({ buzz.category == $0 }) ?? true }
+            .filter { buzz in
                 search.isEmpty
                     ? true
-                    : fly.text.localizedCaseInsensitiveContains(search)
-                        || fly.handle.localizedCaseInsensitiveContains(search)
+                    : buzz.text.localizedCaseInsensitiveContains(search)
+                        || buzz.authorUsername.localizedCaseInsensitiveContains(search)
             }
     }
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: FlyCategory.connected.tint, tintStrength: 0.12)
+            WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.12)
 
             switch step {
             case .pick: picker
@@ -74,8 +71,8 @@ struct ConnectFlyFlow: View {
     private var picker: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                StencilTitle(text: "CONNECT A FLY", size: 30)
-                Text("Which other fly might be talking about the same thing?")
+                StencilTitle(text: "CONNECT A BUZZ", size: 30)
+                Text("Which other buzz might be talking about the same thing?")
                     .font(WallFont.marker(14))
                     .foregroundStyle(WallTheme.ink.opacity(0.85))
             }
@@ -87,11 +84,11 @@ struct ConnectFlyFlow: View {
 
             ScrollView {
                 VStack(spacing: 10) {
-                    ForEach(candidates) { fly in
-                        candidateRow(fly)
+                    ForEach(candidates) { buzz in
+                        candidateRow(buzz)
                     }
                     if candidates.isEmpty {
-                        Text("No flies match that buzz.")
+                        Text("No buzzes match that search.")
                             .font(WallFont.marker(15, weight: .regular))
                             .foregroundStyle(WallTheme.inkSoft)
                             .padding(.top, 26)
@@ -127,11 +124,11 @@ struct ConnectFlyFlow: View {
     private var filterChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 7) {
-                chip(title: "ALL", tint: WallTheme.ink, isActive: filter == nil) {
+                chip(title: "ALL", emoji: nil, tint: WallTheme.ink, isActive: filter == nil) {
                     filter = nil
                 }
-                ForEach(filters) { category in
-                    chip(title: category.title, tint: category.tint, isActive: filter == category) {
+                ForEach(BuzzCategory.allCases) { category in
+                    chip(title: category.title, emoji: category.emoji, tint: category.tint, isActive: filter == category) {
                         filter = filter == category ? nil : category
                     }
                 }
@@ -140,45 +137,51 @@ struct ConnectFlyFlow: View {
         }
     }
 
-    private func chip(title: String, tint: Color, isActive: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(title: String, emoji: String?, tint: Color, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
-                .font(WallFont.stamp(11))
-                .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
-                .padding(.horizontal, 11)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isActive ? tint : WallTheme.paper.opacity(0.9))
-                        .overlay(Capsule().stroke(tint.opacity(isActive ? 1 : 0.5), lineWidth: 1.2))
-                )
+            HStack(spacing: 4) {
+                if let emoji {
+                    Text(emoji).font(.system(size: 11))
+                }
+                Text(title)
+                    .font(WallFont.stamp(11))
+            }
+            .foregroundStyle(isActive ? .white : WallTheme.ink.opacity(0.85))
+            .padding(.horizontal, 11)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isActive ? tint : WallTheme.paper.opacity(0.9))
+                    .overlay(Capsule().stroke(tint.opacity(isActive ? 1 : 0.5), lineWidth: 1.2))
+            )
         }
         .buttonStyle(PressableButtonStyle(scale: 0.93))
     }
 
-    private func candidateRow(_ fly: StoryFly) -> some View {
-        let existing = store.connection(between: focusStoryID, and: fly.id) != nil
+    private func candidateRow(_ buzz: Buzz) -> some View {
+        let existing = store.connection(between: focusBuzzID, and: buzz.id) != nil
+        let status = store.profile(id: buzz.authorID)?.currentStatus ?? .new
         return Button {
             Haptics.tap()
-            targetID = fly.id
+            targetID = buzz.id
             step = .clues
         } label: {
             HStack(spacing: 11) {
-                FlyView(category: fly.category, size: 24, wingsBeating: false)
+                FlyView(status: status, size: 24, wingsBeating: false)
                     .frame(width: 42, height: 36)
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(fly.handle)
+                        Text(buzz.authorUsername)
                             .font(WallFont.stamp(11))
                             .foregroundStyle(WallTheme.rust)
-                        Text(fly.category.title)
+                        Text(buzz.category.title)
                             .font(WallFont.stamp(8))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Capsule().fill(fly.category.tint.opacity(0.9)))
+                            .background(Capsule().fill(buzz.category.tint.opacity(0.9)))
                     }
-                    Text(fly.text)
+                    Text(buzz.text)
                         .font(WallFont.marker(14, weight: .regular))
                         .foregroundStyle(WallTheme.ink)
                         .lineLimit(2)
@@ -189,7 +192,7 @@ struct ConnectFlyFlow: View {
                 if existing {
                     Image(systemName: "link")
                         .font(.system(size: 12, weight: .black))
-                        .foregroundStyle(FlyCategory.connected.tint)
+                        .foregroundStyle(FlyStatus.connected.tint)
                 }
             }
             .padding(11)
@@ -203,7 +206,7 @@ struct ConnectFlyFlow: View {
         }
         .buttonStyle(PressableButtonStyle(scale: 0.98))
         .disabled(existing)
-        .accessibilityLabel(existing ? "\(fly.handle). Already linked." : "\(fly.handle). \(fly.text)")
+        .accessibilityLabel(existing ? "\(buzz.authorUsername)'s buzz. Already linked." : "\(buzz.authorUsername)'s buzz. \(buzz.text)")
     }
 
     // MARK: - Step 2: clues
@@ -214,7 +217,7 @@ struct ConnectFlyFlow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     StencilTitle(text: "WHAT'S THE\nCONNECTION?", size: 27)
                     if let target {
-                        Text("Between this fly and \(target.handle). Pick everything you noticed.")
+                        Text("Between this buzz and \(target.authorUsername)'s. Pick everything you noticed.")
                             .font(WallFont.marker(14))
                             .foregroundStyle(WallTheme.ink.opacity(0.85))
                             .fixedSize(horizontal: false, vertical: true)
@@ -245,7 +248,7 @@ struct ConnectFlyFlow: View {
                     HStack(spacing: 5) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 12, weight: .black))
-                        Text("PICK A DIFFERENT FLY")
+                        Text("PICK A DIFFERENT BUZZ")
                             .font(WallFont.stamp(11))
                     }
                     .foregroundStyle(WallTheme.inkSoft)
@@ -284,10 +287,10 @@ struct ConnectFlyFlow: View {
             .frame(minHeight: 44)
             .background(
                 RoundedRectangle(cornerRadius: 7)
-                    .fill(isActive ? FlyCategory.connected.tint : WallTheme.paper.opacity(0.92))
+                    .fill(isActive ? FlyStatus.connected.tint : WallTheme.paper.opacity(0.92))
                     .overlay(
                         RoundedRectangle(cornerRadius: 7)
-                            .stroke(isActive ? FlyCategory.connected.tint : WallTheme.inkSoft.opacity(0.45), lineWidth: 1.3)
+                            .stroke(isActive ? FlyStatus.connected.tint : WallTheme.inkSoft.opacity(0.45), lineWidth: 1.3)
                     )
             )
         }
@@ -323,7 +326,7 @@ struct ConnectFlyFlow: View {
 
     // MARK: - Step 3: analyzing
 
-    /// The two flies glide toward each other, then the verdict lands.
+    /// The two Flies' buzzes glide toward each other, then the verdict lands.
     private var analyzing: some View {
         VStack(spacing: 26) {
             Spacer()
@@ -333,10 +336,10 @@ struct ConnectFlyFlow: View {
                 let gap: CGFloat = converged ? 74 : proxy.size.width - 96
                 HStack {
                     if let focus, let target {
-                        FlyView(category: focus.category, size: 34)
+                        FlyView(status: status(of: focus), size: 34)
                             .frame(width: 60, alignment: .trailing)
                         Spacer(minLength: 0)
-                        FlyView(category: target.category, size: 34)
+                        FlyView(status: status(of: target), size: 34)
                             .frame(width: 60, alignment: .leading)
                     }
                 }
@@ -350,7 +353,7 @@ struct ConnectFlyFlow: View {
                 Text("COMPARING DETAILS...")
                     .font(WallFont.stencil(22))
                     .foregroundStyle(WallTheme.paper)
-                Text("Just the stories. Nobody is being identified.")
+                Text("Just the buzzes. Nobody is being identified.")
                     .font(WallFont.marker(13, weight: .regular))
                     .foregroundStyle(WallTheme.paper.opacity(0.8))
             }
@@ -462,16 +465,16 @@ struct ConnectFlyFlow: View {
         }
     }
 
-    /// Shown when the new connection tips a 3+ fly cluster into a Swarm.
+    /// Shown when the new connection tips a 3+ buzz cluster into a Swarm.
     private func swarmFormed(_ swarm: Swarm) -> some View {
         VStack(spacing: 6) {
             Text("🪰 SWARM FORMING")
                 .font(WallFont.stamp(12))
-                .foregroundStyle(FlyCategory.connected.tint)
+                .foregroundStyle(FlyStatus.connected.tint)
             Text(swarm.title)
                 .font(WallFont.stencil(20))
                 .foregroundStyle(WallTheme.paper)
-            Text("\(swarm.flyCount) FLIES NOW CIRCLING TOGETHER")
+            Text("\(store.flyCount(for: swarm)) FLIES NOW CIRCLING TOGETHER")
                 .font(WallFont.stamp(10))
                 .foregroundStyle(WallTheme.paper.opacity(0.8))
         }
@@ -480,7 +483,7 @@ struct ConnectFlyFlow: View {
         .background {
             RoundedRectangle(cornerRadius: 8)
                 .fill(WallTheme.paper.opacity(0.12))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(FlyCategory.connected.tint.opacity(0.7), lineWidth: 1.4))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(FlyStatus.connected.tint.opacity(0.7), lineWidth: 1.4))
         }
     }
 
@@ -491,11 +494,15 @@ struct ConnectFlyFlow: View {
 
     // MARK: - Behaviour
 
+    private func status(of buzz: Buzz) -> FlyStatus {
+        store.profile(id: buzz.authorID)?.currentStatus ?? .new
+    }
+
     /// Runs the local deterministic analyzer and stores the connection. The
     /// convergence animation plays while the (instant) result waits to reveal.
     private func runAnalysis() {
         guard let targetID,
-              let link = store.proposeConnection(sourceID: focusStoryID, targetID: targetID, clues: orderedClues)
+              let link = store.proposeConnection(sourceID: focusBuzzID, targetID: targetID, clues: orderedClues)
         else { return }
         resultLink = link
         withAnimation(.easeOut(duration: 0.25)) {

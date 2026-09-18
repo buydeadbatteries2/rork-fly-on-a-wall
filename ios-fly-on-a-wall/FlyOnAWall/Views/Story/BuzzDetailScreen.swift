@@ -1,33 +1,38 @@
 //
-//  StoryDetailScreen.swift
+//  BuzzDetailScreen.swift
 //  FlyOnAWall
 //
-//  Following a fly somewhere private to overhear the gossip.
+//  One Buzz, spread across taped paper: who posted it (the Fly), the text,
+//  tags, stats, Buzz Backs, witness notes, and the action row. Owns the bottom
+//  edge with the I WAS THERE plate.
 //
 
 import SwiftUI
 
-struct StoryDetailScreen: View {
-    let storyID: String
+struct BuzzDetailScreen: View {
+    let buzzID: String
     @Binding var path: [WallRoute]
 
     @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showWitnessSheet: Bool = false
+    @State private var showBuzzBackSheet: Bool = false
     @State private var showReport: Bool = false
     @State private var reactionKick: Bool = false
     @State private var followKick: Bool = false
 
-    private var story: StoryFly? { store.story(id: storyID) }
+    private var buzz: Buzz? { store.buzz(id: buzzID) }
+    private var author: FlyProfile? { buzz.flatMap { store.profile(id: $0.authorID) } }
+    private var isFollowing: Bool { author.map { store.isFollowing($0.id) } ?? false }
 
     var body: some View {
         ZStack {
-            WallBackdrop(tint: story?.category.tint, tintStrength: 0.12)
+            WallBackdrop(tint: buzz?.category.tint, tintStrength: 0.12)
 
-            if let story {
-                content(story)
+            if let buzz, let author {
+                content(buzz, author)
             } else {
-                Text("This fly buzzed off.")
+                Text("This buzz flew off.")
                     .font(WallFont.marker(16))
                     .foregroundStyle(WallTheme.inkSoft)
             }
@@ -36,8 +41,13 @@ struct StoryDetailScreen: View {
         .toolbar(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .sheet(isPresented: $showWitnessSheet) {
-            if let story {
-                IWasThereSheet(story: story)
+            if let buzz {
+                IWasThereSheet(buzz: buzz)
+            }
+        }
+        .sheet(isPresented: $showBuzzBackSheet) {
+            if let buzz {
+                BuzzBackSheet(buzz: buzz)
             }
         }
         .alert("Reported", isPresented: $showReport) {
@@ -47,30 +57,31 @@ struct StoryDetailScreen: View {
         }
     }
 
-    private func content(_ story: StoryFly) -> some View {
+    private func content(_ buzz: Buzz, _ author: FlyProfile) -> some View {
         VStack(spacing: 0) {
             HStack {
                 BackChip { path.removeLast() }
                 Spacer()
-                Text(story.category.title)
+                Text("\(buzz.category.emoji) \(buzz.category.title)")
                     .font(WallFont.stamp(11))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Capsule().fill(story.category.tint.opacity(story.category == .strongConnection ? 0.6 : 0.9)))
+                    .background(Capsule().fill(buzz.category.tint))
             }
             .padding(.horizontal, 18)
             .padding(.top, 4)
 
             ScrollView {
                 VStack(spacing: 18) {
-                    identityCard(story)
-                    confessionCard(story)
-                    statsRow(story)
-                    connectionIndicators(story)
-                    actionGrid(story)
-                    if !store.claims(for: story.id).isEmpty {
-                        witnessNotes(story)
+                    authorCard(buzz, author)
+                    buzzCard(buzz)
+                    statsRow(buzz)
+                    connectionIndicators(buzz)
+                    actionGrid(buzz, author)
+                    buzzBacksSection(buzz)
+                    if !store.claims(for: buzz.id).isEmpty {
+                        witnessNotes(buzz)
                     }
                     Color.clear.frame(height: 100)
                 }
@@ -85,7 +96,7 @@ struct StoryDetailScreen: View {
                     Haptics.thud()
                     showWitnessSheet = true
                 }
-                Text("\(story.witnessCount) flies say they saw it too")
+                Text("\(buzz.iWasThereCount) flies say they were there too")
                     .font(WallFont.stamp(10))
                     .foregroundStyle(WallTheme.paper.opacity(0.9))
                     .shadow(color: .black.opacity(0.6), radius: 3)
@@ -103,44 +114,73 @@ struct StoryDetailScreen: View {
 
     // MARK: - Cards
 
-    private func identityCard(_ story: StoryFly) -> some View {
-        TapedPaper(rotation: -1.6, padding: 14) {
-            HStack(spacing: 12) {
-                FlyView(category: story.category, size: 30, wingsBeating: false)
-                    .frame(width: 48, height: 42)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(story.handle) · Anonymous")
-                        .font(WallFont.stencil(18))
-                        .foregroundStyle(WallTheme.ink)
-                    Text("Posted \(story.postedAgo)")
-                        .font(WallFont.marker(12, weight: .regular))
-                        .foregroundStyle(WallTheme.inkSoft)
+    private func authorCard(_ buzz: Buzz, _ author: FlyProfile) -> some View {
+        Button {
+            Haptics.tap()
+            path.append(WallRoute.hive(author.id))
+        } label: {
+            TapedPaper(rotation: -1.6, padding: 14) {
+                HStack(spacing: 12) {
+                    FlyView(status: author.currentStatus, size: 30, wingsBeating: false)
+                        .frame(width: 48, height: 42)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(author.username)
+                            .font(WallFont.stencil(18))
+                            .foregroundStyle(WallTheme.ink)
+                        Text("Posted \(buzz.postedAgo) · \(author.currentStatus.title)")
+                            .font(WallFont.marker(12, weight: .regular))
+                            .foregroundStyle(WallTheme.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    VStack(spacing: 2) {
+                        Image(systemName: "hexagon.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("HIVE")
+                            .font(WallFont.stamp(9))
+                    }
+                    .foregroundStyle(WallTheme.teal)
                 }
-                Spacer(minLength: 0)
             }
         }
-        .accessibilityElement(children: .combine)
+        .buttonStyle(PressableButtonStyle(scale: 0.98))
+        .accessibilityLabel("\(author.username)'s hive. \(author.currentStatus.blurb)")
     }
 
-    private func confessionCard(_ story: StoryFly) -> some View {
+    private func buzzCard(_ buzz: Buzz) -> some View {
         TapedPaper(rotation: 0.8, padding: 22) {
-            Text(story.text)
-                .font(WallFont.marker(21, weight: .medium))
-                .foregroundStyle(WallTheme.ink)
-                .lineSpacing(6)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(buzz.text)
+                    .font(WallFont.marker(21, weight: .medium))
+                    .foregroundStyle(WallTheme.ink)
+                    .lineSpacing(6)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !buzz.tags.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(buzz.tags, id: \.self) { tag in
+                            Text(tag)
+                                .font(WallFont.stamp(10))
+                                .foregroundStyle(buzz.category.tint)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(
+                                    Capsule()
+                                        .fill(buzz.category.tint.opacity(0.12))
+                                        .overlay(Capsule().stroke(buzz.category.tint.opacity(0.5), lineWidth: 1))
+                                )
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private func statsRow(_ story: StoryFly) -> some View {
+    private func statsRow(_ buzz: Buzz) -> some View {
         HStack(spacing: 8) {
-            stat("\(story.reactionCount)", "laughs")
-            stat("\(story.witnessCount)", "witnesses")
-            stat("\(max(story.connectedFlyCount, store.connectedFlies(to: story).count))", "connected")
-            if let area = story.area {
-                stat(area.uppercased(), "area")
-            }
+            stat("\(buzz.reactionCount)", "laughs")
+            stat("\(buzz.buzzBackCount)", "buzz backs")
+            stat("\(buzz.iWasThereCount)", "i was there")
+            stat("\(max(buzz.connectionCount, store.connectedBuzzes(to: buzz).count))", "linked")
         }
         .accessibilityElement(children: .combine)
     }
@@ -167,30 +207,30 @@ struct StoryDetailScreen: View {
 
     // MARK: - Connections
 
-    /// 🟣 connected-fly count + 🪰 swarm membership, when they exist.
+    /// 🟣 connected-buzz count + 🪰 swarm membership, when they exist.
     @ViewBuilder
-    private func connectionIndicators(_ story: StoryFly) -> some View {
-        let linkCount = store.connections(touching: story.id).count
+    private func connectionIndicators(_ buzz: Buzz) -> some View {
+        let linkCount = store.connections(touching: buzz.id).count
         if linkCount > 0 {
             Button {
                 Haptics.tap()
-                path.append(WallRoute.connectionBoard(story.id))
+                path.append(WallRoute.connectionBoard(buzz.id))
             } label: {
                 HStack(spacing: 11) {
                     Text("🟣")
                         .font(.system(size: 17))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(linkCount) CONNECTED FLIES")
+                        Text("\(linkCount) CONNECTED BUZZES")
                             .font(WallFont.stencil(17))
                             .foregroundStyle(WallTheme.ink)
-                        Text("THESE FLIES MAY CONNECT")
+                        Text("THESE BUZZES MAY CONNECT")
                             .font(WallFont.stamp(9))
                             .foregroundStyle(WallTheme.inkSoft)
                     }
                     Spacer(minLength: 0)
                     Image(systemName: "link")
                         .font(.system(size: 14, weight: .black))
-                        .foregroundStyle(FlyCategory.connected.tint)
+                        .foregroundStyle(FlyStatus.connected.tint)
                 }
                 .padding(13)
                 .frame(minHeight: 52)
@@ -199,16 +239,16 @@ struct StoryDetailScreen: View {
                         .fill(WallTheme.paper.opacity(0.94))
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(FlyCategory.connected.tint.opacity(0.75), lineWidth: 1.8)
+                                .stroke(FlyStatus.connected.tint.opacity(0.75), lineWidth: 1.8)
                         )
                         .wallShadow(radius: 7, y: 4)
                 }
             }
             .buttonStyle(PressableButtonStyle(scale: 0.98))
-            .accessibilityLabel("\(linkCount) connected flies. These flies may connect. Opens the connection board.")
+            .accessibilityLabel("\(linkCount) connected buzzes. These buzzes may connect. Opens the connection board.")
         }
 
-        if let swarm = store.swarm(for: story) {
+        if let swarm = store.swarm(for: buzz) {
             Button {
                 Haptics.tap()
                 path.append(WallRoute.swarm(swarm.id))
@@ -245,33 +285,40 @@ struct StoryDetailScreen: View {
         }
     }
 
-    private func actionGrid(_ story: StoryFly) -> some View {
+    // MARK: - Actions
+
+    private func actionGrid(_ buzz: Buzz, _ author: FlyProfile) -> some View {
         HStack(spacing: 10) {
             actionTile(
                 emoji: "😂",
-                label: "\(story.reactionCount)",
-                isActive: store.hasReacted(to: story.id),
+                label: "\(buzz.reactionCount)",
+                isActive: store.hasReacted(to: buzz.id),
                 kick: reactionKick
             ) {
                 Haptics.tap()
-                store.toggleReaction(story.id)
+                store.toggleReaction(buzz.id)
                 kickReaction()
             }
 
             actionTile(
-                systemImage: story.isFollowed ? "checkmark" : "ant.fill",
-                label: story.isFollowed ? "FOLLOWING" : "FOLLOW\nTHIS FLY",
-                isActive: story.isFollowed,
+                systemImage: "bubble.left.fill",
+                label: "BUZZ\nBACK",
+                isActive: false,
+                kick: false
+            ) {
+                Haptics.tap()
+                showBuzzBackSheet = true
+            }
+
+            actionTile(
+                systemImage: isFollowing ? "checkmark" : "ant.fill",
+                label: isFollowing ? "FOLLOWING" : "FOLLOW\nFLY",
+                isActive: isFollowing,
                 kick: followKick
             ) {
                 Haptics.tap()
-                store.toggleFollow(story.id)
+                store.toggleFollow(author.id)
                 kickFollow()
-            }
-
-            actionTile(systemImage: "link", label: "CONNECTIONS", isActive: !store.connections(touching: story.id).isEmpty, kick: false) {
-                Haptics.tap()
-                path.append(WallRoute.connectionBoard(story.id))
             }
 
             actionTile(systemImage: "flag.fill", label: "REPORT", isActive: false, kick: false) {
@@ -326,14 +373,44 @@ struct StoryDetailScreen: View {
         .accessibilityLabel(label.replacingOccurrences(of: "\n", with: " "))
     }
 
-    private func witnessNotes(_ story: StoryFly) -> some View {
+    // MARK: - Conversation
+
+    private func buzzBacksSection(_ buzz: Buzz) -> some View {
+        let backs = store.buzzBacks(for: buzz.id)
+        return Group {
+            if !backs.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("THE BUZZ BACKS 💬")
+                        .font(WallFont.stencil(16))
+                        .foregroundStyle(WallTheme.paper)
+                        .shadow(color: .black.opacity(0.5), radius: 3)
+
+                    ForEach(backs) { back in
+                        TapedPaper(rotation: Double(abs(back.id.hashValue % 3)) - 1.0, padding: 13) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(back.authorUsername)
+                                    .font(WallFont.stamp(10))
+                                    .foregroundStyle(WallTheme.rust)
+                                Text(back.text)
+                                    .font(WallFont.marker(14, weight: .regular))
+                                    .foregroundStyle(WallTheme.ink)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func witnessNotes(_ buzz: Buzz) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("WHAT THE WITNESSES SAID")
+            Text("WHAT THE WITNESSES SAID 👀")
                 .font(WallFont.stencil(16))
                 .foregroundStyle(WallTheme.paper)
                 .shadow(color: .black.opacity(0.5), radius: 3)
 
-            ForEach(store.claims(for: story.id)) { claim in
+            ForEach(store.claims(for: buzz.id)) { claim in
                 TapedPaper(rotation: 0.6, padding: 14) {
                     VStack(alignment: .leading, spacing: 5) {
                         HStack(spacing: 6) {
@@ -343,6 +420,9 @@ struct StoryDetailScreen: View {
                                 .font(WallFont.stamp(11))
                         }
                         .foregroundStyle(WallTheme.rust)
+                        Text(claim.authorUsername)
+                            .font(WallFont.stamp(10))
+                            .foregroundStyle(WallTheme.inkSoft)
                         if !claim.note.isEmpty {
                             Text(claim.note)
                                 .font(WallFont.marker(14, weight: .regular))
@@ -354,6 +434,8 @@ struct StoryDetailScreen: View {
             }
         }
     }
+
+    // MARK: - Kicks
 
     /// Short scale pop on the laugh icon.
     private func kickReaction() {

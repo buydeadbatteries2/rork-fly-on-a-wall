@@ -2,7 +2,8 @@
 //  SwarmDetailScreen.swift
 //  FlyOnAWall
 //
-//  One swarm: the flies that circle a single event.
+//  One swarm: the Flies circling a single developing story. Tapping a fly
+//  opens their Hive.
 //
 
 import SwiftUI
@@ -31,26 +32,28 @@ struct SwarmDetailScreen: View {
                 WallBackdrop(tint: WallTheme.teal, tintStrength: 0.16)
 
                 if let swarm {
-                    let flies = store.stories(in: swarm)
+                    let flies = store.flyAuthors(for: swarm)
 
                     ForEach(Array(flies.enumerated()), id: \.element.id) { index, fly in
                         let point = orbitPoint(index: index, count: flies.count, field: field)
+                        let hasLinks = store.buzzes(by: fly.id).contains { !store.connections(touching: $0.id).isEmpty }
                         BuzzingFly(
-                            category: fly.category,
+                            status: fly.currentStatus,
                             home: point,
                             bounds: field,
                             size: 34,
                             partner: CGPoint(x: field.midX, y: field.midY),
                             seed: UInt64(index &* 613 &+ 7),
                             isEmphasized: emphasizedID == fly.id,
-                            showsConnectionMark: !store.connections(touching: fly.id).isEmpty,
-                            accessibilityTitle: "\(fly.handle). \(fly.text)"
+                            username: fly.username,
+                            showsConnectionMark: hasLinks,
+                            accessibilityTitle: "\(fly.username). \(fly.currentStatus.blurb)"
                         ) {
                             tap(fly)
                         }
                     }
 
-                    header(swarm, count: flies.count)
+                    header(swarm, flyCount: flies.count)
                 }
             }
         }
@@ -68,22 +71,22 @@ struct SwarmDetailScreen: View {
         }
     }
 
-    /// The fly with the most links anchors the swarm's Connection Board.
+    /// The buzz with the most links anchors the swarm's Connection Board.
     private func openBoard(for swarm: Swarm) {
-        let flies = store.stories(in: swarm)
-        let anchor = flies.max(by: {
+        let members = store.buzzes(in: swarm)
+        let anchor = members.max(by: {
             store.connections(touching: $0.id).count < store.connections(touching: $1.id).count
         })
         guard let anchorID = anchor?.id else { return }
         path.append(WallRoute.connectionBoard(anchorID))
     }
 
-    private func header(_ swarm: Swarm, count: Int) -> some View {
+    private func header(_ swarm: Swarm, flyCount: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 BackChip { path.removeLast() }
                 Spacer()
-                Text("\(count) FLIES")
+                Text("\(flyCount) FLIES · \(swarm.buzzCount) BUZZES")
                     .font(WallFont.stamp(12))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
@@ -114,7 +117,7 @@ struct SwarmDetailScreen: View {
         if stats.strong + stats.possible + stats.weak > 0 {
             Text("\(stats.strong) STRONG · \(stats.possible) POSSIBLE · \(stats.weak) WEAK")
                 .font(WallFont.stamp(11))
-                .foregroundStyle(FlyCategory.connected.tint)
+                .foregroundStyle(FlyStatus.connected.tint)
                 .padding(.top, 2)
         }
     }
@@ -131,7 +134,7 @@ struct SwarmDetailScreen: View {
         )
     }
 
-    private func tap(_ fly: StoryFly) {
+    private func tap(_ fly: FlyProfile) {
         guard emphasizedID == nil else { return }
         Haptics.tap()
         withAnimation(.spring(response: 0.28, dampingFraction: 0.5)) {
@@ -140,7 +143,7 @@ struct SwarmDetailScreen: View {
         let hold: Double = reduceMotion ? 0.2 : 0.42
         DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
             emphasizedID = nil
-            path.append(WallRoute.story(fly.id))
+            path.append(WallRoute.hive(fly.id))
         }
     }
 }

@@ -2,9 +2,9 @@
 //  ConnectionBoardScreen.swift
 //  FlyOnAWall
 //
-//  Phase 2: the investigation board. The selected fly sits near the centre,
-//  related flies hang around it, and tappable lines hold them together.
-//  Everything here relates STORIES — never people.
+//  Phase 2: the investigation board. The selected Buzz sits near the centre,
+//  related Buzzes hang around it, and tappable lines hold them together.
+//  Everything here relates BUZZES (content) — never people.
 //
 
 import SwiftUI
@@ -12,11 +12,11 @@ import SwiftUI
 // MARK: - Line visuals per strength
 
 extension ConnectionStrength {
-    /// Connection colour: purple belongs to linked stories (the connected tint).
+    /// Connection colour: purple belongs to linked buzzes (the connected status tint).
     var lineColor: Color {
         switch self {
         case .weakBuzz: WallTheme.inkSoft
-        case .possible, .strongBuzz: FlyCategory.connected.tint
+        case .possible, .strongBuzz: FlyStatus.connected.tint
         }
     }
 
@@ -40,21 +40,21 @@ extension ConnectionStrength {
 // MARK: - Screen
 
 struct ConnectionBoardScreen: View {
-    let storyID: String
+    let buzzID: String
     @Binding var path: [WallRoute]
 
     @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showConnectFlow: Bool = false
     @State private var clueLink: FlyConnection?
-    @State private var inspected: StoryFly?
+    @State private var inspected: Buzz?
     @State private var boardAppeared: Bool = false
 
-    private var story: StoryFly? { store.story(id: storyID) }
-    private var links: [FlyConnection] { store.connections(touching: storyID) }
-    private var swarm: Swarm? { story.flatMap { store.swarm(for: $0) } }
+    private var buzz: Buzz? { store.buzz(id: buzzID) }
+    private var links: [FlyConnection] { store.connections(touching: buzzID) }
+    private var swarm: Swarm? { buzz.flatMap { store.swarm(for: $0) } }
 
-    /// Strongest links hang closest to the focus fly — held tighter.
+    /// Strongest links hang closest to the focus buzz — held tighter.
     private var rankedLinks: [FlyConnection] {
         links.sorted { strengthRank($0.strength) < strengthRank($1.strength) }
     }
@@ -79,11 +79,11 @@ struct ConnectionBoardScreen: View {
             )
 
             ZStack {
-                WallBackdrop(tint: FlyCategory.connected.tint, tintStrength: 0.10)
+                WallBackdrop(tint: FlyStatus.connected.tint, tintStrength: 0.10)
 
-                if let story {
-                    boardLayer(story, field: field)
-                    header(story)
+                if let buzz {
+                    boardLayer(buzz, field: field)
+                    header(buzz)
                 }
 
                 connectButton
@@ -98,30 +98,30 @@ struct ConnectionBoardScreen: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showConnectFlow) {
-            ConnectFlyFlow(focusStoryID: storyID, path: $path)
+            ConnectFlyFlow(focusBuzzID: buzzID, path: $path)
         }
         .sheet(item: $clueLink) { link in
-            ConnectionClueSheet(link: link, focusStoryID: storyID, path: $path)
+            ConnectionClueSheet(link: link, focusBuzzID: buzzID, path: $path)
         }
-        .sheet(item: $inspected) { fly in
-            FlyInspectorSheet(story: fly, path: $path)
+        .sheet(item: $inspected) { buzz in
+            BuzzInspectorSheet(buzz: buzz, path: $path)
         }
     }
 
     // MARK: - Board layers
 
-    private func boardLayer(_ story: StoryFly, field: CGRect) -> some View {
+    private func boardLayer(_ buzz: Buzz, field: CGRect) -> some View {
         let center = CGPoint(x: field.midX, y: field.midY)
 
         return ZStack {
             // Lines underneath everything.
             ForEach(Array(rankedLinks.enumerated()), id: \.element.id) { index, link in
-                if let partner = store.story(id: link.other(end: story.id)) {
+                if let partner = store.buzz(id: link.other(end: buzz.id)) {
                     let end = anchor(for: index, field: field)
                     lineLayer(from: center, to: end, link: link, index: index)
                     lineNode(link: link, from: center, to: end, index: index)
-                    BoardFlyNode(
-                        story: partner,
+                    BoardBuzzNode(
+                        buzz: partner,
                         rank: index,
                         appeared: boardAppeared
                     ) {
@@ -132,7 +132,7 @@ struct ConnectionBoardScreen: View {
                 }
             }
 
-            focusNode(story)
+            focusNode(buzz)
                 .position(center)
 
             if rankedLinks.isEmpty {
@@ -142,13 +142,13 @@ struct ConnectionBoardScreen: View {
         }
     }
 
-    /// NO CONNECTIONS YET — this fly still buzzes alone. For now.
+    /// NO CONNECTIONS YET — this buzz still buzzes alone. For now.
     private var emptyState: some View {
         VStack(spacing: 4) {
             Text("NO CONNECTIONS YET")
                 .font(WallFont.stencil(18))
                 .foregroundStyle(WallTheme.ink)
-            Text("This fly buzzes alone. For now.")
+            Text("This buzz flies alone. For now.")
                 .font(WallFont.marker(13, weight: .regular))
                 .foregroundStyle(WallTheme.inkSoft)
         }
@@ -165,7 +165,7 @@ struct ConnectionBoardScreen: View {
         .opacity(boardAppeared ? 1 : 0)
     }
 
-    /// Organic sagging line between the focus fly and a related fly.
+    /// Organic sagging line between the focus buzz and a related buzz.
     private func lineLayer(from: CGPoint, to: CGPoint, link: FlyConnection, index: Int) -> some View {
         let line = ConnectionLine(from: from, to: to, bowSign: index % 2 == 0 ? 1 : -1)
         let glow = ConnectionLine(from: from, to: to, bowSign: index % 2 == 0 ? 1 : -1)
@@ -200,9 +200,9 @@ struct ConnectionBoardScreen: View {
         .position(point)
     }
 
-    /// Radial layout, deterministic per story. Strong links sit closest.
+    /// Radial layout, deterministic per buzz. Strong links sit closest.
     private func anchor(for rank: Int, field: CGRect) -> CGPoint {
-        var rng = WallRandom(seed: UInt64(truncatingIfNeeded: Int64(storyID.hashValue &+ rank &* 7919)))
+        var rng = WallRandom(seed: UInt64(truncatingIfNeeded: Int64(buzzID.hashValue &+ rank &* 7919)))
         let count = max(1, rankedLinks.count)
         let spread = count == 1 ? .pi / 2 : (2 * .pi / Double(count))
         let angle = Double(rank) * spread - .pi / 2 + rng.next(in: -0.26...0.26)
@@ -221,25 +221,25 @@ struct ConnectionBoardScreen: View {
         )
     }
 
-    private func focusNode(_ story: StoryFly) -> some View {
+    private func focusNode(_ buzz: Buzz) -> some View {
         VStack(spacing: 3) {
-            FlyView(category: story.category, size: 46)
-            Text(story.handle)
+            FlyView(status: authorStatus(of: buzz), size: 46)
+            Text(buzz.authorUsername)
                 .font(WallFont.stamp(11))
                 .foregroundStyle(WallTheme.ink)
-            Text("THIS FLY")
+            Text("THIS BUZZ")
                 .font(WallFont.stamp(8))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
-                .background(Capsule().fill(FlyCategory.connected.tint))
+                .background(Capsule().fill(FlyStatus.connected.tint))
         }
         .padding(14)
         .background {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [FlyCategory.connected.tint.opacity(0.20), .clear],
+                        colors: [FlyStatus.connected.tint.opacity(0.20), .clear],
                         center: .center,
                         startRadius: 6,
                         endRadius: 96
@@ -250,17 +250,21 @@ struct ConnectionBoardScreen: View {
         .scaleEffect(boardAppeared ? 1 : 0.4)
         .opacity(boardAppeared ? 1 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(story.handle). Focus of this board. \(story.text)")
+        .accessibilityLabel("\(buzz.authorUsername)'s buzz. Focus of this board. \(buzz.text)")
+    }
+
+    private func authorStatus(of buzz: Buzz) -> FlyStatus {
+        store.profile(id: buzz.authorID)?.currentStatus ?? .new
     }
 
     // MARK: - Chrome
 
-    private func header(_ story: StoryFly) -> some View {
+    private func header(_ buzz: Buzz) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             BackChip { path.removeLast() }
 
             StencilTitle(text: "CONNECTION BOARD", size: 27)
-            Text("STORIES MAY CONNECT. PEOPLE ARE NEVER IDENTIFIED.")
+            Text("BUZZES MAY CONNECT. PEOPLE ARE NEVER IDENTIFIED.")
                 .font(WallFont.stamp(9))
                 .foregroundStyle(WallTheme.ink.opacity(0.75))
 
@@ -290,12 +294,12 @@ struct ConnectionBoardScreen: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Capsule().fill(FlyCategory.connected.tint))
+                    .background(Capsule().fill(FlyStatus.connected.tint))
             }
             Text(swarm.title)
                 .font(WallFont.stencil(21))
                 .foregroundStyle(WallTheme.ink)
-            Text("\(swarm.flyCount) FLIES · \(stats.strong) STRONG · \(stats.possible) POSSIBLE")
+            Text("\(store.flyCount(for: swarm)) FLIES · \(stats.strong) STRONG · \(stats.possible) POSSIBLE")
                 .font(WallFont.stamp(11))
                 .foregroundStyle(WallTheme.inkSoft)
 
@@ -315,7 +319,7 @@ struct ConnectionBoardScreen: View {
                 .background(
                     Capsule()
                         .fill(WallTheme.ink.opacity(0.85))
-                        .overlay(Capsule().stroke(FlyCategory.connected.tint.opacity(0.9), lineWidth: 1.6))
+                        .overlay(Capsule().stroke(FlyStatus.connected.tint.opacity(0.9), lineWidth: 1.6))
                 )
             }
             .buttonStyle(PressableButtonStyle())
@@ -362,11 +366,11 @@ struct ConnectionBoardScreen: View {
 
     private var connectButton: some View {
         VStack(spacing: 6) {
-            PlateButton(title: "CONNECT A FLY", systemImage: "link") {
+            PlateButton(title: "CONNECT A BUZZ", systemImage: "link") {
                 Haptics.tap()
                 showConnectFlow = true
             }
-            Text("Propose that two flies may be talking about the same thing.")
+            Text("Propose that two buzzes may be talking about the same thing.")
                 .font(WallFont.stamp(9))
                 .foregroundStyle(WallTheme.paper.opacity(0.85))
                 .shadow(color: .black.opacity(0.55), radius: 3)
@@ -408,22 +412,27 @@ struct ConnectionLine: Shape {
 
 // MARK: - Board nodes
 
-/// One related fly hovering gently at the end of a line.
-private struct BoardFlyNode: View {
-    let story: StoryFly
+/// One related buzz hovering gently at the end of a line.
+private struct BoardBuzzNode: View {
+    let buzz: Buzz
     let rank: Int
     let appeared: Bool
     let action: () -> Void
 
+    @Environment(WallStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hover: Bool = false
     @State private var wobble: Bool = false
 
+    private var status: FlyStatus {
+        store.profile(id: buzz.authorID)?.currentStatus ?? .new
+    }
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {
-                FlyView(category: story.category, size: 26)
-                Text(story.handle)
+                FlyView(status: status, size: 26)
+                Text(buzz.authorUsername)
                     .font(WallFont.stamp(9))
                     .foregroundStyle(WallTheme.ink.opacity(0.85))
             }
@@ -438,7 +447,7 @@ private struct BoardFlyNode: View {
         .scaleEffect(appeared ? 1 : 0.4)
         .opacity(appeared ? 1 : 0)
         .onAppear(perform: startMotion)
-        .accessibilityLabel("\(story.handle). \(story.text). Tap to inspect.")
+        .accessibilityLabel("\(buzz.authorUsername)'s buzz. \(buzz.text). Tap to inspect.")
     }
 
     /// Subtle floating only — the graph must stay readable. No wall wandering.
@@ -476,6 +485,6 @@ private struct LineNode: View {
         .buttonStyle(PressableButtonStyle(scale: 0.85))
         .scaleEffect(appeared ? 1 : 0.3)
         .opacity(appeared ? 1 : 0)
-        .accessibilityLabel("Why do these flies connect? \(link.strength.title)")
+        .accessibilityLabel("Why do these buzzes connect? \(link.strength.title)")
     }
 }

@@ -20,7 +20,7 @@ enum AppTab: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .wall: "THE WALL"
         case .swarms: "SWARMS"
-        case .post: "POST A FLY"
+        case .post: "POST A BUZZ"
         case .explore: "EXPLORE"
         case .hive: "MY HIVE"
         }

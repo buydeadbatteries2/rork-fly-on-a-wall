@@ -22,8 +22,8 @@ enum ConnectionAnalyzer {
     private static let possibleThreshold: Double = 2.8
 
     static func analyze(
-        source: StoryFly,
-        target: StoryFly,
+        source: Buzz,
+        target: Buzz,
         selectedClues: [ConnectionClue]
     ) -> Result {
         var score: Double = 0
@@ -43,13 +43,8 @@ enum ConnectionAnalyzer {
             score += areaA == areaB ? 1 : -0.5
         }
 
-        // Connection-flavoured categories carry built-in corroboration.
-        let linky: (StoryFly) -> Bool = { $0.category == .connected || $0.category == .strongConnection }
-        if linky(source), linky(target) {
-            score += 1
-        } else if linky(source) || linky(target) {
-            score += 0.5
-        }
+        // Buzzes in the same content category carry built-in corroboration.
+        if source.category == target.category { score += 1 }
 
         // --- Clue weights, most specific first so lists read well ---
         let clues = selectedClues.sorted { $0.weight > $1.weight }
@@ -61,7 +56,7 @@ enum ConnectionAnalyzer {
         if let areaA = source.area, let areaB = target.area, areaA != areaB {
             conflicts.append("Different areas reported")
         }
-        if source.category == .inQuestion || target.category == .inQuestion,
+        if source.category != target.category,
            clues.contains(.detailsOverlap) {
             conflicts.append("One detail conflicts")
         }

@@ -65,7 +65,7 @@ final class RobotDirector {
         self.perchPoint = perch
     }
 
-    @ObservationIgnored private var categories: [UInt64: FlyCategory] = [:]
+    @ObservationIgnored private var statuses: [UInt64: FlyStatus] = [:]
     @ObservationIgnored private var spots: [UInt64: CGPoint] = [:]
     @ObservationIgnored private var inboxes: [UInt64: AsyncStream<FlyCommand>.Continuation] = [:]
     @ObservationIgnored private var behaviorTask: Task<Void, Never>?
@@ -115,8 +115,8 @@ final class RobotDirector {
     // MARK: - Fly registration
 
     /// Flies join the director's world and receive commands via the returned stream.
-    func register(seed: UInt64, category: FlyCategory) -> AsyncStream<FlyCommand> {
-        categories[seed] = category
+    func register(seed: UInt64, status: FlyStatus) -> AsyncStream<FlyCommand> {
+        statuses[seed] = status
         return AsyncStream { continuation in
             inboxes[seed] = continuation
         }
@@ -177,7 +177,7 @@ final class RobotDirector {
             return
         }
 
-        switch categories[nearest.seed] {
+        switch statuses[nearest.seed] {
         case .hot where Double.random(in: 0...1) < 0.55:
             glance(toward: direction, strength: 1.0)
             setExpression(.surprised)
@@ -257,7 +257,7 @@ final class RobotDirector {
     private func runLandingGag() async {
         try? await Task.sleep(for: .seconds(Double.random(in: 20...38)))
         while !Task.isCancelled {
-            if !reduceMotion, state == .idle, let seed = categories.keys.randomElement() {
+            if !reduceMotion, state == .idle, let seed = statuses.keys.randomElement() {
                 send(.land(at: perchPoint), to: seed)
                 try? await Task.sleep(for: .seconds(1.3))
                 withAnimation(.easeInOut(duration: 0.35)) {

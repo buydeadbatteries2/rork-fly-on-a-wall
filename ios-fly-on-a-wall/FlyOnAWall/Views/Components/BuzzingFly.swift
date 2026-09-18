@@ -3,8 +3,9 @@
 //  FlyOnAWall
 //
 //  Self-contained wandering behaviour for one fly inside a bounded field.
-//  When a RobotDirector is attached, the fly reports its heading and obeys
-//  swat escapes and landing commands; otherwise it moves exactly as before.
+//  A fly on The Wall represents a BLOGGER (FlyProfile); its colour reflects
+//  the status of that Fly's current Buzz. When a RobotDirector is attached,
+//  the fly reports its heading and obeys swat escapes and landing commands.
 //
 
 import SwiftUI
@@ -12,23 +13,28 @@ import SwiftUI
 /// Wraps a `FlyView` with organic wander movement inside `bounds`, plus a
 /// generous invisible hit target so a moving fly is still easy to tap.
 struct BuzzingFly: View {
-    let category: FlyCategory
+    /// Current Buzz status — drives colour, wings, symbol and motion.
+    let status: FlyStatus
     /// Anchor the fly wanders around, in the parent's coordinate space.
     let home: CGPoint
     /// Rect the fly must never leave.
     let bounds: CGRect
     var size: CGFloat = 34
-    /// Optional second anchor the fly drifts toward for social categories.
+    /// Optional second anchor the fly drifts toward for social statuses.
     var partner: CGPoint?
     /// Seed keeps each fly's path distinct but stable.
     let seed: UInt64
     var isEmphasized: Bool = false
+    /// True while this fly is selected — movement pauses so it stays readable.
+    var isPaused: Bool = false
     /// Point the fly bursts away from on entrance (the robot's swat).
     var entranceFrom: CGPoint?
     var entranceDelay: Double = 0
     /// Optional brain: enables reporting and robot commands.
     var director: RobotDirector?
-    /// Phase 2: subtle purple badge + ring when this story has connections.
+    /// Blogger handle shown as a small paper tag under the fly.
+    var username: String? = nil
+    /// Subtle purple badge + ring when this fly's Buzz has connections.
     var showsConnectionMark: Bool = false
     var accessibilityTitle: String
     let onTap: () -> Void
@@ -43,30 +49,34 @@ struct BuzzingFly: View {
     @State private var wanderTask: Task<Void, Never>?
 
     init(
-        category: FlyCategory,
+        status: FlyStatus,
         home: CGPoint,
         bounds: CGRect,
         size: CGFloat = 34,
         partner: CGPoint? = nil,
         seed: UInt64,
         isEmphasized: Bool = false,
+        isPaused: Bool = false,
         entranceFrom: CGPoint? = nil,
         entranceDelay: Double = 0,
         director: RobotDirector? = nil,
+        username: String? = nil,
         showsConnectionMark: Bool = false,
         accessibilityTitle: String,
         onTap: @escaping () -> Void
     ) {
-        self.category = category
+        self.status = status
         self.home = home
         self.bounds = bounds
         self.size = size
         self.partner = partner
         self.seed = seed
         self.isEmphasized = isEmphasized
+        self.isPaused = isPaused
         self.entranceFrom = entranceFrom
         self.entranceDelay = entranceDelay
         self.director = director
+        self.username = username
         self.showsConnectionMark = showsConnectionMark
         self.accessibilityTitle = accessibilityTitle
         self.onTap = onTap
@@ -84,11 +94,12 @@ struct BuzzingFly: View {
                 Color.clear
                     .frame(width: hitSize, height: hitSize)
                     .contentShape(Circle())
-                FlyView(category: category, size: size, isEmphasized: isEmphasized)
+                FlyView(status: status, size: size, isEmphasized: isEmphasized)
                     .overlay(connectionMark)
                     .rotationEffect(.degrees(tilt))
-                    .scaleEffect(isEmphasized ? 1.9 : 1.0)
+                    .scaleEffect(isEmphasized ? 1.7 : 1.0)
                     .animation(.spring(response: 0.3, dampingFraction: 0.5), value: isEmphasized)
+                usernameTag
             }
         }
         .buttonStyle(.plain)
@@ -99,26 +110,54 @@ struct BuzzingFly: View {
         .task { await runLife() }
     }
 
+    /// Small taped tag carrying the blogger's handle. Subtle while moving,
+    /// prominent when the fly is emphasized/selected. Never intercepts taps.
+    @ViewBuilder
+    private var usernameTag: some View {
+        if let username {
+            Text(username)
+                .font(WallFont.stamp(max(9, size * 0.26)))
+                .kerning(0.4)
+                .foregroundStyle(isEmphasized ? WallTheme.rust : WallTheme.ink.opacity(0.85))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(WallTheme.paper.opacity(isEmphasized ? 0.97 : 0.82))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3)
+                                .stroke(WallTheme.inkSoft.opacity(isEmphasized ? 0.6 : 0.3), lineWidth: 1)
+                        )
+                }
+                .rotationEffect(.degrees(-2))
+                .offset(y: size * 0.62 + 12)
+                .scaleEffect(isEmphasized ? 1.15 : 1)
+                .opacity(isEmphasized ? 1 : 0.6)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isEmphasized)
+                .allowsHitTesting(false)
+        }
+    }
+
     /// Subtle linked-story cue: faint purple ring plus a tiny link badge.
-    /// Deliberately quiet so the category colour system stays dominant.
+    /// Deliberately quiet so the status colour system stays dominant.
     @ViewBuilder
     private var connectionMark: some View {
         if showsConnectionMark {
             let badge = max(12, size * 0.46)
             ZStack {
                 Circle()
-                    .stroke(FlyCategory.connected.tint.opacity(0.4), lineWidth: 1.3)
+                    .stroke(FlyStatus.connected.tint.opacity(0.4), lineWidth: 1.3)
                     .frame(width: size * 1.45, height: size * 1.45)
                 Circle()
                     .fill(WallTheme.paper.opacity(0.95))
                     .frame(width: badge, height: badge)
                     .overlay(
-                        Circle().stroke(FlyCategory.connected.tint, lineWidth: 1.2)
+                        Circle().stroke(FlyStatus.connected.tint, lineWidth: 1.2)
                     )
                     .overlay(
                         Image(systemName: "link")
                             .font(.system(size: badge * 0.5, weight: .black))
-                            .foregroundStyle(FlyCategory.connected.tint)
+                            .foregroundStyle(FlyStatus.connected.tint)
                     )
             }
             .offset(x: size * 0.52, y: -size * 0.52)
@@ -131,7 +170,7 @@ struct BuzzingFly: View {
     private func runLife() async {
         guard !started else { return }
         started = true
-        let inbox = director?.register(seed: seed, category: category)
+        let inbox = director?.register(seed: seed, status: status)
         await runEntrance()
         wanderTask = Task { await runWander() }
         guard let inbox else { return }
@@ -161,11 +200,11 @@ struct BuzzingFly: View {
 
     private func runWander() async {
         while !Task.isCancelled {
-            if parked {
+            if parked || isPaused {
                 try? await Task.sleep(for: .seconds(0.15))
                 continue
             }
-            let motion = category.motion
+            let motion = status.motion
             let paused = rng.nextUnit() < motion.pauseChance
             let baseDuration = rng.next(in: motion.stepDuration)
             let duration = reduceMotion ? baseDuration * 2.2 : baseDuration
@@ -228,7 +267,7 @@ struct BuzzingFly: View {
     // MARK: - Geometry
 
     private func nextTarget() -> CGPoint {
-        let motion = category.motion
+        let motion = status.motion
         // Reduce Motion: tiny drift, still alive but calm.
         let radius = reduceMotion ? min(motion.radius * 0.18, 8) : motion.radius
 
